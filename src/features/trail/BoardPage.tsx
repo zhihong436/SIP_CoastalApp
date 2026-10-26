@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BackIcon, CheckIcon } from '../../components/Icons'
+import { BackIcon, CheckIcon, QrIcon } from '../../components/Icons'
 import { supabase } from '../../lib/supabase'
+import { CardScanner } from './CardScanner'
 import { boardHeading, boardIntro, problems } from './problems'
 import type { StopProgress, TrailSession } from './useTrailSession'
 
@@ -18,8 +19,10 @@ const isDone = (stops: StopProgress[], stop: number) =>
 export function BoardPage({ session, stops, onChanged }: Props) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const anyPlayable = problems.some((problem) => problem.stop !== undefined && !isDone(stops, problem.stop))
 
-  // The database picks the roles and opens the problem on both phones.
+  // The database makes the person who opens a problem its Investigator and opens the problem on both phones.
   async function open(stop: number) {
     setPending(true)
     setError(false)
@@ -74,7 +77,16 @@ export function BoardPage({ session, stops, onChanged }: Props) {
             Could not open that problem. Check your connection and try again.
           </p>
         )}
+        {anyPlayable && (
+          <button type="button" className="button button--primary button--full button--with-icon board__scan" onClick={() => setScanning(true)}>
+            <QrIcon />
+            Scan a card
+          </button>
+        )}
       </main>
+      {scanning && (
+        <CardScanner sessionId={session.id} onClose={() => setScanning(false)} onOpened={onChanged} />
+      )}
     </div>
   )
 }

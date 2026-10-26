@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
-import { problemForCard } from './problems'
+import { openCardProblem } from './openCardProblem'
 
 type ScanState =
   | { status: 'working' }
@@ -28,12 +28,7 @@ export function ScanPage() {
     if (error) return { status: 'error' } as const
     if (!member) return { status: 'no_trail' } as const
 
-    // An unknown problem goes to the board. A finished one is refused by the database, which also lands there.
-    const stop = problemForCard(problem)?.stop
-    if (stop !== undefined) {
-      const { error: openError } = await supabase.rpc('open_stop', { p_session_id: member.session_id, p_stop: stop })
-      if (openError) return { status: 'error' } as const
-    }
+    if (!(await openCardProblem(member.session_id, problem))) return { status: 'error' } as const
     return { status: 'done', sessionId: member.session_id } as const
   }, [problem, userId])
 

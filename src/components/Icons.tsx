@@ -113,3 +113,12 @@ export const CheckIcon = ({ size = 18 }: { size?: number }) => (
     <path d="M5 12.5l4.5 4.5L19 7.5" />
   </Icon>
 )
+
+export const QrIcon = ({ size = 22 }: { size?: number }) => (
+  <Icon size={size}>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <path d="M14 14h3v3h-3zM20 14v.01M14 20h3M20 17v4" />
+  </Icon>
+)

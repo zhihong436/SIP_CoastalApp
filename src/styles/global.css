@@ -1275,6 +1275,42 @@ h1 {
   text-decoration: underline;
 }
 
+.board__scan {
+  margin-top: var(--space-3);
+}
+
+/* Card scanner. It covers the board with the camera and a square to aim at. */
+.scanner {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: #000;
+}
+
+.scanner__frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(70vw, 16rem);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 3px solid #fff;
+  border-radius: var(--radius-block);
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / 35%);
+  pointer-events: none;
+}
+
+.scanner__hint {
+  position: absolute;
+  top: calc(50% + min(35vw, 8rem) + var(--space-3));
+  right: 0;
+  left: 0;
+  margin: 0;
+  padding: 0 var(--space-3);
+  text-align: center;
+  font-weight: 600;
+}
+
 /* Hold the shore, Interpreter */
 .protection-picture {
   flex: none;
