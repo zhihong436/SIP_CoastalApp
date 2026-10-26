@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
 import { CrossIcon, DiscoverIcon, HeartIcon } from '../../components/Icons'
@@ -8,45 +8,23 @@ import { useDiscover, type Candidate } from './useDiscover'
 
 type Direction = 'like' | 'pass'
 
-interface PointerSample {
-  x: number
-  time: number
-}
-
 const FLY_DISTANCE = 560
-const FULL_STAMP_DISTANCE = 120
 const FLY_DURATION = 260
-// A flick is a fast release after a short drag, so it decides even when the card is not a third across.
-const FLICK_MIN_DISTANCE = 40
-const FLICK_MIN_SPEED = 0.5
-const SPEED_WINDOW = 150
-const AXIS_LOCK_DISTANCE = 8
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-// Swipe is presentation only. The card follows the finger, then useDiscover saves the decision.
+// The fly-off is presentation only. useDiscover saves the decision and moves the queue on.
 export function DiscoverPage() {
   const { status, current, next, pending, decisionError, newMatch, closeMatch, decide, reload } = useDiscover()
   const { profile: ownProfile } = useOwnProfile()
   const navigate = useNavigate()
 
-  const [dx, setDx] = useState(0)
-  const [dragging, setDragging] = useState(false)
   // The card being decided flies off at once. It stays mounted until the save is known, so a failure can bring it back.
   const [departing, setDeparting] = useState<{ candidate: Candidate; direction: Direction } | null>(null)
   const [flyDone, setFlyDone] = useState(false)
   const [instant, setInstant] = useState(false)
-  // iOS sends few move events on a fast swipe, so release decisions use refs, not rendered state.
-  const isDragging = useRef(false)
-  const startX = useRef(0)
-  const startY = useRef(0)
-  const axis = useRef<'x' | 'y' | null>(null)
-  const bio = useRef<Element | null>(null)
-  const bioStart = useRef(0)
-  const cardWidth = useRef(0)
-  const samples = useRef<PointerSample[]>([])
   const flyTimer = useRef<number | undefined>(undefined)
 
   useEffect(() => () => window.clearTimeout(flyTimer.current), [])
@@ -57,98 +35,29 @@ export function DiscoverPage() {
     if (current?.user_id === departing.candidate.user_id) {
       window.clearTimeout(flyTimer.current)
       setDeparting(null)
-      setDx(0)
       return
     }
     if (!flyDone) return
     // The next card takes the top spot without sliding.
     setInstant(true)
     setDeparting(null)
-    setDx(0)
     requestAnimationFrame(() => requestAnimationFrame(() => setInstant(false)))
   }, [departing, pending, current, flyDone])
 
   function startDecision(direction: Direction) {
     if (!current || pending || departing) return
-    isDragging.current = false
-    setDragging(false)
     setDeparting({ candidate: current, direction })
-    setDx(direction === 'like' ? FLY_DISTANCE : -FLY_DISTANCE)
     setFlyDone(false)
     flyTimer.current = window.setTimeout(() => setFlyDone(true), prefersReducedMotion() ? 0 : FLY_DURATION)
     void decide(direction)
-  }
-
-  function recordSample(event: PointerEvent<HTMLDivElement>) {
-    const sample = { x: event.clientX, time: event.timeStamp }
-    samples.current = [...samples.current.filter((s) => sample.time - s.time <= SPEED_WINDOW), sample]
-  }
-
-  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (pending || departing || event.button > 0) return
-    event.currentTarget.setPointerCapture(event.pointerId)
-    isDragging.current = true
-    axis.current = null
-    startX.current = event.clientX
-    startY.current = event.clientY
-    cardWidth.current = event.currentTarget.offsetWidth
-    bio.current = event.currentTarget.querySelector('.card__body')
-    bioStart.current = bio.current?.scrollTop ?? 0
-    samples.current = []
-    recordSample(event)
-    setDragging(true)
-    setDx(0)
-  }
-
-  // The card takes every touch (touch-action: none), so the first few pixels decide whether this drag
-  // moves the card or scrolls the bio. Leaving that to the browser made iOS cancel some swipes.
-  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!isDragging.current) return
-    recordSample(event)
-    const moveX = event.clientX - startX.current
-    const moveY = event.clientY - startY.current
-    if (!axis.current && Math.max(Math.abs(moveX), Math.abs(moveY)) > AXIS_LOCK_DISTANCE) {
-      axis.current = Math.abs(moveX) > Math.abs(moveY) ? 'x' : 'y'
-      // The card starts moving from where the drag was recognised, so it does not jump.
-      startX.current = event.clientX
-    }
-    if (axis.current === 'x') setDx(event.clientX - startX.current)
-    else if (axis.current === 'y' && bio.current) bio.current.scrollTop = bioStart.current - moveY
-  }
-
-  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
-    if (!isDragging.current) return
-    isDragging.current = false
-    setDragging(false)
-    if (axis.current !== 'x') {
-      setDx(0)
-      return
-    }
-    recordSample(event)
-    const distance = event.clientX - startX.current
-    const [oldest] = samples.current
-    const elapsed = event.timeStamp - oldest.time
-    const speed = elapsed > 0 ? (event.clientX - oldest.x) / elapsed : 0
-    const crossedThird = Math.abs(distance) > cardWidth.current / 3
-    const flicked =
-      Math.abs(distance) >= FLICK_MIN_DISTANCE && Math.abs(speed) > FLICK_MIN_SPEED && Math.sign(speed) === Math.sign(distance)
-    if (crossedThird || flicked) startDecision(distance > 0 ? 'like' : 'pass')
-    else setDx(0)
-  }
-
-  function onPointerCancel() {
-    isDragging.current = false
-    setDragging(false)
-    setDx(0)
   }
 
   const top = departing?.candidate ?? current
   // After a save the queue has moved on, so `current` is the card waiting behind the departing one.
   const saved = departing && current?.user_id !== departing.candidate.user_id
   const underneath = saved ? current : next
-  const progress = Math.min(Math.abs(dx) / FULL_STAMP_DISTANCE, 1)
-  const transition =
-    dragging || instant || prefersReducedMotion() ? 'none' : 'transform var(--swipe-duration) ease'
+  const flyX = departing ? (departing.direction === 'like' ? FLY_DISTANCE : -FLY_DISTANCE) : 0
+  const transition = instant || prefersReducedMotion() ? 'none' : 'transform var(--swipe-duration) ease'
   const busy = pending || !!departing
 
   return (
@@ -183,7 +92,7 @@ export function DiscoverPage() {
                 key={underneath.user_id}
                 className="deck__card"
                 style={{
-                  transform: `scale(${0.95 + 0.05 * progress}) translateY(${12 - 12 * progress}px)`,
+                  transform: departing ? 'none' : 'scale(0.95) translateY(12px)',
                   transition,
                 }}
               >
@@ -192,18 +101,10 @@ export function DiscoverPage() {
             )}
             <div
               key={top.user_id}
-              className="deck__card deck__card--top"
-              style={{ transform: `translateX(${dx}px) rotate(${dx / 18}deg)`, transition }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerCancel}
+              className="deck__card"
+              style={{ transform: `translateX(${flyX}px) rotate(${flyX / 18}deg)`, transition }}
             >
-              <ProfileCard
-                profile={top}
-                likeOpacity={Math.max(0, Math.min(dx / FULL_STAMP_DISTANCE, 1))}
-                passOpacity={Math.max(0, Math.min(-dx / FULL_STAMP_DISTANCE, 1))}
-              />
+              <ProfileCard profile={top} />
             </div>
           </div>
           {decisionError && (

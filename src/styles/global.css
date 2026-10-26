@@ -208,15 +208,6 @@ a {
 .deck__card {
   position: absolute;
   inset: 0;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-/* The page scrolls the bio itself, so the browser never takes over a drag and cancels it. */
-.deck__card--top {
-  touch-action: none;
-  -webkit-touch-callout: none;
-  cursor: grab;
 }
 
 .card {
@@ -243,30 +234,6 @@ a {
   font-size: 7rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-}
-
-.card__stamp {
-  position: absolute;
-  top: 1.375rem;
-  padding: 0.25rem 0.875rem;
-  border: 3px solid;
-  border-radius: 0.625rem;
-  background: var(--color-surface);
-  font-size: 1.625rem;
-  font-weight: 900;
-  letter-spacing: 0.125rem;
-}
-
-.card__stamp--like {
-  left: 1.125rem;
-  color: var(--color-accent);
-  transform: rotate(-12deg);
-}
-
-.card__stamp--pass {
-  right: 1.125rem;
-  color: var(--color-text-strong);
-  transform: rotate(12deg);
 }
 
 .card__identity {
