@@ -1,4 +1,4 @@
-import { sections, type Plan, type SectionId } from './holdTheShore'
+import { sections, type Plan, type ProtectionId, type SectionId } from './holdTheShore'
 
 // The drawn shore sits across the middle of the camera view, as fractions of its height from the top. The sea is the
 // upper part and the sand the lower. The tap buttons use the same fractions, so they sit exactly over the drawing.
@@ -103,9 +103,9 @@ function drawWaves(context: CanvasRenderingContext2D, width: number, top: number
   context.globalAlpha = 1
 }
 
-function drawProtection(
+export function drawProtection(
   context: CanvasRenderingContext2D,
-  protection: Plan[SectionId],
+  protection: ProtectionId | null,
   left: number,
   sectionWidth: number,
   seaBottom: number,

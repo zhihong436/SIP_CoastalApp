@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useResync } from '../../lib/useResync'
-import type { Plan, ResultId, SectionId } from './holdTheShore'
+import type { BuiltItem, Plan, ResultId, SectionId } from './holdTheShore'
 
 export interface TrailSession {
   id: string
@@ -15,7 +15,9 @@ export interface StopProgress {
   stop: number
   interpreter_id: string
   investigator_id: string
-  // Every checked plan, so a rise tells the Investigator's phone to play the storm.
+  // What the Interpreter has bought and where the Investigator has placed it.
+  build: BuiltItem[]
+  // Every storm, so a rise tells the Investigator's phone to play it.
   attempts: number
   last_plan: Plan | null
   last_results: Record<SectionId, ResultId> | null
@@ -53,7 +55,7 @@ export function useTrailSession(sessionId: string) {
     const { data: stops, error: progressError } = await supabase
       .from('stop_progress')
       .select(
-        'stop, interpreter_id, investigator_id, attempts, last_plan, last_results, solved_at, interpreter_acknowledged_at, investigator_acknowledged_at',
+        'stop, interpreter_id, investigator_id, build, attempts, last_plan, last_results, solved_at, interpreter_acknowledged_at, investigator_acknowledged_at',
       )
       .eq('session_id', sessionId)
     if (progressError) {

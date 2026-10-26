@@ -8,6 +8,21 @@ export type ResultId = 'safe' | 'safe_with_cost' | 'lost'
 // A section holds a protection, or null for Empty.
 export type Plan = Record<SectionId, ProtectionId | null>
 
+// One bought protection. The section is null while it sits in the toolbox.
+export interface BuiltItem {
+  id: string
+  protection: ProtectionId
+  section: SectionId | null
+}
+
+export function planFromBuild(build: BuiltItem[]): Plan {
+  const plan: Plan = { beach: null, path: null, car_park: null }
+  for (const item of build) {
+    if (item.section) plan[item.section] = item.protection
+  }
+  return plan
+}
+
 export const sections: { id: SectionId; name: string; tag: string }[] = [
   { id: 'beach', name: 'Beach', tag: 'Beach. Gentle waves are slowly washing the sand away.' },
   { id: 'path', name: 'Path', tag: 'Park path. Strong storm waves hit the bank here directly.' },
@@ -80,5 +95,6 @@ export const feedbackLost = 'Part of the shore was lost. Change your plan and tr
 
 export const introAll =
   'Storm waves are eating the shore at East Coast Park. Protect three stretches of coast with only 7 points to spend.'
-export const introInterpreter = 'You hold the plans. Explain each protection and its cost, and choose one for each stretch.'
-export const introInvestigator = 'You have the scanner. Tap each stretch of shore and tell your partner what you see.'
+export const introInterpreter = 'You hold the budget. Explain each protection and its cost, and buy what your partner needs.'
+export const introInvestigator =
+  'You have the scanner. Tell your partner what each stretch of shore needs, then build the protections where they belong.'

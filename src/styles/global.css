@@ -999,44 +999,10 @@ h1 {
   overflow-y: auto;
 }
 
-.choices {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.choice {
-  min-height: var(--touch-target);
-  padding: 0 var(--space-3);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-field);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-}
-
-.choice[aria-pressed='true'] {
-  border-color: var(--color-coastal);
-  background: var(--color-coastal);
-  color: #fff;
-}
-
-.choice:focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 2px;
-}
-
 .stop__feedback {
   margin: var(--space-3) 0 0;
   color: var(--color-coastal);
   font-weight: 700;
-}
-
-.stop__submit {
-  margin-top: var(--space-3);
 }
 
 .stop__found h2 {
@@ -1111,6 +1077,10 @@ h1 {
   cursor: pointer;
 }
 
+.camera__section--target {
+  background: var(--color-shore-target);
+}
+
 .camera__section--selected {
   background: rgb(255 255 255 / 22%);
   outline: 3px solid #fff;
@@ -1138,6 +1108,29 @@ h1 {
 .camera__cover h2,
 .camera__cover p {
   margin: 0;
+}
+
+.camera__placed {
+  position: absolute;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.camera__placed:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -3px;
+}
+
+/* The section tag and any error sit just above the drawn shore, so they never cover its labels. */
+.camera__notes {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-2);
 }
 
 .camera__bottom {
@@ -1170,6 +1163,60 @@ h1 {
 
 .camera__actions .button {
   flex: 1;
+}
+
+.camera__actions .camera__storm {
+  flex: 2;
+}
+
+/* The bought items that are not placed yet. The strip scrolls sideways if there are more than fit. */
+.toolbox {
+  display: flex;
+  gap: var(--space-2);
+  min-height: 3.5rem;
+  padding: var(--space-2);
+  overflow-x: auto;
+  border-radius: var(--radius-field);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-block);
+}
+
+.toolbox__empty {
+  align-self: center;
+  margin: 0;
+  padding: 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.toolbox__item {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2) 0 var(--space-1);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-field);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toolbox__item[aria-pressed='true'] {
+  border-color: var(--color-coastal);
+}
+
+.toolbox__item:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.toolbox__item:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 /* Problem board */
@@ -1229,6 +1276,45 @@ h1 {
 }
 
 /* Hold the shore, Interpreter */
+.protection-picture {
+  flex: none;
+  width: 3.5rem;
+  height: 2.83rem;
+  border-radius: var(--radius-small);
+}
+
+.shop {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.shop__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.shop__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.shop__text p {
+  margin: var(--space-1) 0 0;
+}
+
+.shop__button {
+  flex: none;
+}
+
+.shop .text-button {
+  margin-top: 0;
+}
+
 .budget {
   position: sticky;
   top: 0;
@@ -1244,11 +1330,6 @@ h1 {
   text-align: center;
 }
 
-.budget--over {
-  background: var(--color-error);
-}
-
-.protections,
 .storm-results {
   display: flex;
   flex-direction: column;
@@ -1258,7 +1339,6 @@ h1 {
   list-style: none;
 }
 
-.protections p,
 .storm-results p {
   margin: var(--space-1) 0 0;
 }
@@ -1268,13 +1348,6 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-}
-
-.stop__plan-bar {
-  position: sticky;
-  bottom: 0;
-  padding: var(--space-2) 0 calc(var(--space-2) + env(safe-area-inset-bottom));
-  background: var(--color-bg);
 }
 
 .result-badge {

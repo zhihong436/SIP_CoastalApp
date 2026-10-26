@@ -93,11 +93,7 @@ function Stop({
   // The camera screen fills the whole phone and has its own back control.
   if (introDone && role === 'investigator') {
     return (
-      <InvestigatorStop
-        matchId={session.match_id}
-        progress={progress}
-        partnerName={match.partner.name}
-      />
+      <InvestigatorStop sessionId={session.id} matchId={session.match_id} progress={progress} onChanged={onChanged} />
     )
   }
 

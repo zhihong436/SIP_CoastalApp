@@ -8,10 +8,9 @@ import {
   protections,
   resultText,
   sections,
-  type Plan,
   type ProtectionId,
-  type SectionId,
 } from './holdTheShore'
+import { ProtectionPicture } from './ProtectionPicture'
 import { ResultBadge } from './ResultBadge'
 import type { StopProgress } from './useTrailSession'
 
@@ -21,29 +20,28 @@ interface Props {
   onChanged: () => void
 }
 
-const emptyPlan: Plan = { beach: null, path: null, car_park: null }
+function pointsText(cost: number) {
+  return `${cost} ${cost === 1 ? 'point' : 'points'}`
+}
 
 export function InterpreterStop({ sessionId, progress, onChanged }: Props) {
-  // A new plan starts from the last one, so changing one stretch does not mean choosing all three again.
-  const [plan, setPlan] = useState<Plan>(progress.last_plan ?? emptyPlan)
   const [pending, setPending] = useState(false)
   const [feedback, setFeedback] = useState<'over_budget' | 'error' | null>(null)
   const solved = progress.solved_at !== null
-  const used = Object.values(plan).reduce((total, id) => total + (protections.find((p) => p.id === id)?.cost ?? 0), 0)
+  const used = progress.build.reduce(
+    (total, item) => total + protections.find((p) => p.id === item.protection)!.cost,
+    0,
+  )
+  const pointsLeft = budget - used
 
-  function choose(section: SectionId, protection: ProtectionId | null) {
-    setPlan((current) => ({ ...current, [section]: protection }))
-    setFeedback(null)
-  }
-
-  // The database decides whether the plan is allowed and what happened. This phone only shows its answer.
-  async function submit() {
+  // The database decides whether a purchase is allowed. This phone shows only what it saved.
+  async function buy(protection: ProtectionId) {
     setPending(true)
     setFeedback(null)
-    const { data, error } = await supabase.rpc('submit_stop_answer', {
+    const { data, error } = await supabase.rpc('buy_protection', {
       p_session_id: sessionId,
       p_stop: progress.stop,
-      p_plan: plan,
+      p_protection: protection,
     })
     if (error) setFeedback('error')
     else if (data?.[0]?.over_budget) setFeedback('over_budget')
@@ -51,10 +49,23 @@ export function InterpreterStop({ sessionId, progress, onChanged }: Props) {
     setPending(false)
   }
 
+  async function giveBack(itemId: string) {
+    setPending(true)
+    setFeedback(null)
+    const { error } = await supabase.rpc('return_protection', {
+      p_session_id: sessionId,
+      p_stop: progress.stop,
+      p_item_id: itemId,
+    })
+    if (error) setFeedback('error')
+    onChanged()
+    setPending(false)
+  }
+
   return (
     <main className="screen stop">
       {!solved && (
-        <p className={used > budget ? 'budget budget--over' : 'budget'} role="status">
+        <p className="budget" role="status">
           Points used {used} of {budget}
         </p>
       )}
@@ -83,70 +94,78 @@ export function InterpreterStop({ sessionId, progress, onChanged }: Props) {
 
       {!solved && (
         <>
-          <section className="block">
-            <p className="label">Protections</p>
-            <ul className="protections">
+          {feedback === 'over_budget' && (
+            <p className="form-message form-message--error" role="alert">
+              {overBudgetText}
+            </p>
+          )}
+          {feedback === 'error' && (
+            <p className="form-message form-message--error" role="alert">
+              Could not save that. Check your connection and try again.
+            </p>
+          )}
+
+          <section className="block" aria-labelledby="shop-list">
+            <p className="label" id="shop-list">
+              Shop
+            </p>
+            <ul className="shop">
               {protections.map((protection) => (
-                <li key={protection.id}>
-                  <strong>
-                    {protection.name} · {protection.cost} {protection.cost === 1 ? 'point' : 'points'}
-                  </strong>
-                  <p className="muted small">{protection.description}</p>
+                <li key={protection.id} className="shop__item">
+                  <ProtectionPicture protection={protection.id} />
+                  <div className="shop__text">
+                    <strong>
+                      {protection.name} · {pointsText(protection.cost)}
+                    </strong>
+                    <p className="muted small">{protection.description}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="button button--primary shop__button"
+                    disabled={pending || protection.cost > pointsLeft}
+                    aria-label={`Buy ${protection.name}`}
+                    onClick={() => void buy(protection.id)}
+                  >
+                    Buy
+                  </button>
                 </li>
               ))}
             </ul>
             <p className="muted small">You cannot see what each stretch needs. Ask your partner.</p>
           </section>
 
-          {sections.map((section) => (
-            <section className="block" key={section.id}>
-              <p className="label">{section.name}</p>
-              <div className="choices" role="group" aria-label={`Choose for the ${section.name}`}>
-                {protections.map((protection) => (
-                  <button
-                    key={protection.id}
-                    type="button"
-                    className="choice"
-                    aria-pressed={plan[section.id] === protection.id}
-                    disabled={pending}
-                    onClick={() => choose(section.id, protection.id)}
-                  >
-                    {protection.name}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className="choice"
-                  aria-pressed={plan[section.id] === null}
-                  disabled={pending}
-                  onClick={() => choose(section.id, null)}
-                >
-                  Empty
-                </button>
-              </div>
-            </section>
-          ))}
-
-          <div className="stop__plan-bar">
-            {feedback === 'over_budget' && (
-              <p className="form-message form-message--error" role="alert">
-                {overBudgetText}
-              </p>
+          <section className="block" aria-labelledby="bought-list">
+            <p className="label" id="bought-list">
+              Bought
+            </p>
+            {progress.build.length === 0 ? (
+              <p className="muted small">Nothing bought yet.</p>
+            ) : (
+              <ul className="shop">
+                {progress.build.map((item) => {
+                  const protection = protections.find((p) => p.id === item.protection)!
+                  return (
+                    <li key={item.id} className="shop__item">
+                      <ProtectionPicture protection={item.protection} />
+                      <div className="shop__text">
+                        <strong>{protection.name}</strong>
+                        <p className="muted small">{pointsText(protection.cost)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="text-button shop__button"
+                        disabled={pending}
+                        aria-label={`Return ${protection.name}`}
+                        onClick={() => void giveBack(item.id)}
+                      >
+                        Return
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
             )}
-            {feedback === 'error' && (
-              <p className="form-message form-message--error" role="alert">
-                Could not check that plan. Check your connection and try again.
-              </p>
-            )}
-            <button
-              type="button"
-              className="button button--primary button--full"
-              disabled={pending}
-              onClick={() => void submit()}
-            >
-              {pending ? 'Checking…' : 'Submit'}
-            </button>
-          </div>
+          </section>
         </>
       )}
     </main>

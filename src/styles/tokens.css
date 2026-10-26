@@ -23,6 +23,8 @@
   --color-shore-rock: #7b6f64;
   --color-shore-plant: #3f9a4a;
   --color-shore-label: #ffffff;
+  /* Soft teal over the sections while a toolbox item is selected, to say they can be tapped. */
+  --color-shore-target: rgb(11 110 112 / 35%);
   /* What happened to a section. Safe is teal, Safe with a cost is amber and Lost is red. */
   --color-result-safe: var(--color-coastal);
   --color-result-safe-bg: #e1f2f1;
