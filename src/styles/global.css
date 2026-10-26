@@ -46,15 +46,6 @@ a {
   color: var(--color-accent-strong);
 }
 
-.preview-banner {
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-warning-bg);
-  border: 1px solid var(--color-warning-border);
-  border-radius: var(--radius-small);
-  font-size: 0.875rem;
-}
-
 .form {
   display: flex;
   flex-direction: column;
@@ -175,4 +166,102 @@ a {
 
 .actions .button {
   flex: 1;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.form-message--error,
+.field__error {
+  color: #b3261e;
+}
+
+.field__error {
+  font-weight: 400;
+}
+
+.field textarea {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.field textarea:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.details {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.details dt {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Tabbed layout: the page area scrolls and the tab bar stays at the bottom. */
+.shell {
+  display: flex;
+  flex-direction: column;
+  max-width: 28rem;
+  height: 100dvh;
+  margin: 0 auto;
+}
+
+.shell__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.shell__main > .screen {
+  flex: 1 0 auto;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+}
+
+.shell__main > .screen--fill {
+  flex: 1 1 0;
+  height: auto;
+}
+
+.tabs {
+  display: flex;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tabs__link {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tabs__link.active {
+  color: var(--color-accent-strong);
 }
