@@ -1,27 +1,67 @@
 # SIP_CoastalDatingApp
 
-Mobile website for the USI2001 coastal mystery dating app. React, TypeScript, Vite and Supabase.
+Mobile web app for the USI2001 Social Innovation Project: a closed-test dating app with a two-player coastal protection game.
+
+React, TypeScript, Vite, Supabase (Auth, Postgres, Realtime). Hosted on Cloudflare Pages.
 
 ## Setup
 
-1. Run `npm install`.
-2. Create `.env.local` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The file is git-ignored. Cloudflare Pages needs the same two variables.
-3. Run `npm run dev` to develop and `npm run build` to check types and build.
+```bash
+npm install
+```
+
+Create `.env.local`:
+
+```
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+```
+
+Values from the project owner. Public sign-up is off; test accounts are created in Supabase.
+
+## Scripts
+
+| Command | Does |
+| --- | --- |
+| `npm run dev` | Dev server |
+| `npm run build` | Type check and production build |
+| `npm run db:reset` | Runs `supabase/reset.sql` then `supabase/seed.sql` on the shared database |
+
+## Structure
+
+| Path | Contents |
+| --- | --- |
+| `src/app/` | Routes and guards |
+| `src/features/` | `auth`, `profiles`, `discover`, `chat`, `trail`, `camera` |
+| `src/features/trail/` | Game. `problems.ts` lists problems, `holdTheShore.ts` holds minigame text |
+| `src/lib/` | Supabase client, foreground reload hook |
+| `src/styles/` | `tokens.css` (colours and shared values), `global.css` |
+| `supabase/migrations/` | Schema, row level security, database functions |
+| `spike.html`, `src/spike/` | Camera test page. Results in `docs/spike-results.md` |
+
+## Conventions
+
+- Run `npm run build` before pushing.
+- All writes go through database functions. Game results are computed in the database, not the client.
+- Schema changes go in a new migration. Applied migrations are not edited.
+- New tables enable RLS and grant only to `authenticated`.
+- Colours go in `tokens.css`.
+- No new dependencies without agreement.
+- No secrets in the repo. Only the publishable key goes in `.env.local`.
 
 ## Database
 
-All schema changes live in `supabase/migrations/`. Apply them to the linked project with `npx supabase db push`. Never change the schema in the dashboard.
+- One shared Supabase project for all environments. Access is by invite to the Supabase organisation as Developer.
+- Link once with `npx supabase login` and `npx supabase link --project-ref ukshfrnhqhvqmrmrqutd`.
+- Apply migrations with `npx supabase db push`, at the same time as pushing the code that needs them.
+- The service key is never used in the app or committed.
+- `npm run db:reset` wipes all test data, including trails in progress, and resets the three test profiles.
+- Do not use `supabase db reset --linked`.
 
-Public sign-up is off. Create tester accounts in the Supabase dashboard, and ban an account to revoke it.
+## Hosting
 
-Two administrative scripts are run by hand against the shared project, never from the app.
-
-- `supabase/seed.sql` creates profiles for the three test accounts.
-- `supabase/reset.sql` clears decisions, matches and messages so testing can repeat.
-
-Run `npm run db:reset` to run `reset.sql` and then `seed.sql` against the linked project. **Warning: it wipes the shared test data for every tester, and the seed resets the three test profiles to their original values.**
-
-## Pages
-
-- The app opens at `/sign-in`. After signing in, the tabs are Discover, Chats and Me, and a conversation opens its trail lobby.
-- `/spike.html` is the standalone camera spike. Record its results in `docs/spike-results.md`.
+- Cloudflare Pages builds `npm run build` to `dist`.
+- `main` deploys to the live site. Other branches deploy to `https://<branch>.sip-coastaldatingapp.pages.dev`.
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are set as type Text, not Secret.
+- The camera needs HTTPS. Test camera features on a deployed URL on iPhone.
+- QR cards encode `<site>/scan/<problem>`, for example `/scan/storm-waves`.
