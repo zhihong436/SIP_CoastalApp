@@ -13,6 +13,25 @@
   --color-accent-shadow: rgb(194 58 79 / 35%);
   /* Sea blue for coastal and trail elements only, never ordinary account, Discover or chat screens. */
   --color-coastal: #0b6e70;
+  /* The shore drawn over the camera view. It needs to read on bright water, sky and sand, so it is not in the brand colours. */
+  --color-camera-outline: rgb(0 0 0 / 60%);
+  --color-shore-sea: #2a8fa8;
+  --color-shore-sea-storm: #14354a;
+  --color-shore-wave: #ffffff;
+  --color-shore-sand: #e8cf9b;
+  --color-shore-wall: #b9bcc0;
+  --color-shore-rock: #7b6f64;
+  --color-shore-plant: #3f9a4a;
+  --color-shore-label: #ffffff;
+  /* Soft teal over the sections while a toolbox item is selected, to say they can be tapped. */
+  --color-shore-target: rgb(11 110 112 / 35%);
+  /* What happened to a section. Safe is teal, Safe with a cost is amber and Lost is red. */
+  --color-result-safe: var(--color-coastal);
+  --color-result-safe-bg: #e1f2f1;
+  --color-result-cost: #7a5200;
+  --color-result-cost-bg: var(--color-warning-bg);
+  --color-result-lost: var(--color-error);
+  --color-result-lost-bg: #fde8e6;
   --color-error: #b42318;
   --color-warning-bg: #fff4d6;
   --color-warning-border: #e0b84a;

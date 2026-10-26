@@ -1,4 +1,5 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { useRef } from 'react'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
 import { ProfileLoadError } from '../features/profiles/ProfileSetupPage'
 import { ProfileProvider, useOwnProfile } from '../features/profiles/ProfileProvider'
@@ -8,8 +9,16 @@ import { ProfileProvider, useOwnProfile } from '../features/profiles/ProfileProv
 // Everything signed in. Keyed by user id, so switching accounts discards the previous person's state.
 export function RequireSignIn() {
   const { session, loading } = useAuth()
+  const location = useLocation()
+  // Someone who signs out should not be sent back to the page they left when the next person signs in.
+  const hadSession = useRef(false)
+  if (session) hadSession.current = true
   if (loading) return <p className="screen muted">Loading…</p>
-  if (!session) return <Navigate to="/sign-in" replace />
+  if (!session) {
+    // Sign-in returns to the page that sent the person here, such as a card link.
+    const from = hadSession.current ? undefined : location.pathname + location.search
+    return <Navigate to="/sign-in" replace state={{ from }} />
+  }
   return (
     <ProfileProvider key={session.user.id}>
       <Outlet />

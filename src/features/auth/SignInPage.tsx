@@ -1,17 +1,20 @@
 import { isAuthRetryableFetchError } from '@supabase/supabase-js'
 import { useState, type FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from './AuthProvider'
 
 export function SignInPage() {
   const { session, loading } = useAuth()
+  const location = useLocation()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
 
   if (loading) return <p className="screen muted">Loading…</p>
-  // Signed-in users go to Discover. The profile guard sends anyone without a profile to setup.
-  if (session) return <Navigate to="/discover" replace />
+  // Signed-in users go back to the page that sent them here, or to Discover. The profile guard sends anyone
+  // without a profile to setup.
+  const from = (location.state as { from?: string } | null)?.from
+  if (session) return <Navigate to={from ?? '/discover'} replace />
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
