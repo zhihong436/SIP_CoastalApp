@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '../features/auth/AuthProvider'
 import { SignInPage } from '../features/auth/SignInPage'
+import { DiscoverPage } from '../features/discover/DiscoverPage'
 import { MePage } from '../features/profiles/MePage'
 import { ProfileSetupPage } from '../features/profiles/ProfileSetupPage'
 import { RequireProfile, RequireSignIn } from './Guards'
@@ -15,7 +16,7 @@ export function App() {
           <Route path="/profile/setup" element={<ProfileSetupPage />} />
           <Route element={<RequireProfile />}>
             <Route element={<TabLayout />}>
-              <Route path="/discover" element={<main className="screen">Discover is coming next.</main>} />
+              <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/me" element={<MePage />} />
             </Route>
           </Route>
