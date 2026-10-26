@@ -301,3 +301,156 @@ h1 {
 .panel p {
   margin: 0;
 }
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  padding: var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--color-surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.chat-row__top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chat-row__preview {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A focused view such as a conversation or the trail lobby. It has no tab bar. */
+.focus {
+  display: flex;
+  flex-direction: column;
+  max-width: 28rem;
+  height: 100dvh;
+  margin: 0 auto;
+}
+
+.focus__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.focus__header h1 {
+  overflow: hidden;
+  font-size: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  color: var(--color-accent-strong);
+  font-size: 1.5rem;
+  text-decoration: none;
+}
+
+/* The trail uses the coastal colour so it reads as a separate part of the app. */
+.trail-panel {
+  display: flex;
+  flex-direction: column;
+  margin: var(--space-2) var(--space-3) 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--color-coastal);
+  color: #fff;
+  text-decoration: none;
+}
+
+.messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  padding: var(--space-3);
+  overflow-y: auto;
+}
+
+.bubble {
+  align-self: flex-start;
+  max-width: 80%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+
+.bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.bubble--own {
+  align-self: flex-end;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.bubble--sending {
+  opacity: 0.6;
+}
+
+.bubble__time {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.bubble__retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.composer {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.composer input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  font: inherit;
+}

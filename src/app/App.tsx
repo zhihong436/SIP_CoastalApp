@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '../features/auth/AuthProvider'
 import { SignInPage } from '../features/auth/SignInPage'
+import { ChatsPage } from '../features/chat/ChatsPage'
+import { ConversationPage } from '../features/chat/ConversationPage'
 import { DiscoverPage } from '../features/discover/DiscoverPage'
 import { MePage } from '../features/profiles/MePage'
 import { ProfileSetupPage } from '../features/profiles/ProfileSetupPage'
@@ -17,8 +19,10 @@ export function App() {
           <Route element={<RequireProfile />}>
             <Route element={<TabLayout />}>
               <Route path="/discover" element={<DiscoverPage />} />
+              <Route path="/chats" element={<ChatsPage />} />
               <Route path="/me" element={<MePage />} />
             </Route>
+            <Route path="/chats/:matchId" element={<ConversationPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/sign-in" replace />} />
