@@ -25,6 +25,8 @@ export function ProfileForm({ initial, submitLabel, onSave, onCancel }: Props) {
     setValues((current) => ({ ...current, [field]: value }))
   }
 
+  const bioLength = values.bio.trim().length
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const result = validateProfile(values)
@@ -43,26 +45,36 @@ export function ProfileForm({ initial, submitLabel, onSave, onCancel }: Props) {
 
   return (
     <form className="form" onSubmit={handleSubmit} noValidate>
-      <label className="field">
-        <span>Name</span>
+      <label className="field-card">
+        <span className="label">Name</span>
         <input value={values.name} onChange={(e) => change('name', e.target.value)} autoComplete="given-name" />
         {errors.name && <small className="field__error">{errors.name}</small>}
       </label>
-      <label className="field">
-        <span>Age</span>
-        <input value={values.age} onChange={(e) => change('age', e.target.value)} inputMode="numeric" />
-        {errors.age && <small className="field__error">{errors.age}</small>}
-      </label>
-      <label className="field">
-        <span>Gender</span>
-        <input value={values.gender} onChange={(e) => change('gender', e.target.value)} />
-        {errors.gender && <small className="field__error">{errors.gender}</small>}
-      </label>
-      <label className="field">
-        <span>Bio</span>
-        <textarea value={values.bio} onChange={(e) => change('bio', e.target.value)} rows={4} />
-        {errors.bio && <small className="field__error">{errors.bio}</small>}
-      </label>
+      <div className="field-row">
+        <label className="field-card">
+          <span className="label">Age</span>
+          <input value={values.age} onChange={(e) => change('age', e.target.value)} inputMode="numeric" />
+          {errors.age && <small className="field__error">{errors.age}</small>}
+        </label>
+        <label className="field-card">
+          <span className="label">Gender</span>
+          <input value={values.gender} onChange={(e) => change('gender', e.target.value)} />
+          {errors.gender && <small className="field__error">{errors.gender}</small>}
+        </label>
+      </div>
+      <div className="field-card">
+        <label className="label" htmlFor="profile-bio">
+          About me
+        </label>
+        <textarea id="profile-bio" value={values.bio} onChange={(e) => change('bio', e.target.value)} rows={6} />
+        <div className="field-card__footer">
+          <small className="field__error">{errors.bio}</small>
+          {/* Counts the trimmed text, as validation does. */}
+          <span className={bioLength > 300 ? 'counter counter--over' : 'counter'} aria-live="polite">
+            {bioLength} / 300
+          </span>
+        </div>
+      </div>
       {saveError && (
         <p className="form-message form-message--error" role="alert">
           {saveError}

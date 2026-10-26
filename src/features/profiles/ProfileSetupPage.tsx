@@ -12,7 +12,7 @@ export function ProfileSetupPage() {
 
   return (
     <main className="screen">
-      <h1>Create your profile</h1>
+      <h1 className="page-title">Create your profile</h1>
       <p className="muted">Other testers will see these four details.</p>
       <ProfileForm
         submitLabel="Save profile"

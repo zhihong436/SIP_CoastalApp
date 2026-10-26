@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { Avatar } from '../../components/Avatar'
+import { AlertIcon, BackIcon, ChevronIcon, SendIcon, WaveIcon } from '../../components/Icons'
 import { useAuth } from '../auth/AuthProvider'
 import { getDraft, setDraft } from './drafts'
 import { formatTime } from './formatTime'
@@ -59,13 +61,20 @@ function Conversation({ matchId, partnerName }: { matchId: string; partnerName: 
     <div className="focus">
       <header className="focus__header">
         <Link to="/chats" className="back-link" aria-label="Back to Chats">
-          ←
+          <BackIcon />
         </Link>
+        <Avatar name={partnerName} className="avatar avatar--small" />
         <h1>{partnerName}</h1>
       </header>
       <Link to={`/chats/${matchId}/trail`} className="trail-panel">
-        <strong>Coastal trail</strong>
-        <span>Open the trail lobby for you and {partnerName}</span>
+        <span className="trail-panel__icon" aria-hidden="true">
+          <WaveIcon />
+        </span>
+        <span className="trail-panel__text">
+          <strong>Coastal trail</strong>
+          <span>Open the trail lobby for you and {partnerName}</span>
+        </span>
+        <ChevronIcon />
       </Link>
       <div className="messages" role="log">
         {status === 'loading' && <p className="muted">Loading…</p>}
@@ -80,20 +89,29 @@ function Conversation({ matchId, partnerName }: { matchId: string; partnerName: 
         {status === 'ready' && saved.length === 0 && outgoing.length === 0 && (
           <p className="muted">No messages yet. Say hello to {partnerName}.</p>
         )}
-        {saved.map((message) => (
-          <div key={message.id} className={message.sender_id === userId ? 'bubble bubble--own' : 'bubble'}>
-            <p>{message.body}</p>
-            <span className="bubble__time">{formatTime(message.created_at)}</span>
-          </div>
-        ))}
+        {saved.map((message, index) => {
+          const own = message.sender_id === userId
+          // Unconfirmed messages are always the user's own, so they continue a run of own messages.
+          const nextSender = saved[index + 1]?.sender_id ?? (outgoing.length > 0 ? userId : undefined)
+          return (
+            <div key={message.id} className={own ? 'message message--own' : 'message'}>
+              <div className={own ? 'bubble bubble--own' : 'bubble'}>
+                <p>{message.body}</p>
+              </div>
+              {nextSender !== message.sender_id && (
+                <span className="message__time">{formatTime(message.created_at)}</span>
+              )}
+            </div>
+          )
+        })}
         {outgoing.map((message) => (
-          <div
-            key={message.clientId}
-            className={message.status === 'sending' ? 'bubble bubble--own bubble--sending' : 'bubble bubble--own'}
-          >
-            <p>{message.body}</p>
+          <div key={message.clientId} className="message message--own">
+            <div className={`bubble bubble--own bubble--${message.status}`}>
+              <p>{message.body}</p>
+            </div>
             {message.status === 'failed' && (
-              <button type="button" className="bubble__retry" onClick={() => retry(message.clientId)}>
+              <button type="button" className="message__retry" onClick={() => retry(message.clientId)}>
+                <AlertIcon />
                 Not sent. Tap to retry.
               </button>
             )}
@@ -109,8 +127,8 @@ function Conversation({ matchId, partnerName }: { matchId: string; partnerName: 
           placeholder="Message"
           aria-label="Message"
         />
-        <button type="submit" className="button button--primary" disabled={!text.trim()}>
-          Send
+        <button type="submit" className="send-button" aria-label="Send" disabled={!text.trim()}>
+          <SendIcon />
         </button>
       </form>
     </div>

@@ -1,7 +1,17 @@
 import type { ReactNode } from 'react'
 
 // Strokes use the current text colour. Icon-only buttons carry their own accessible label.
-function Icon({ size, filled, children }: { size: number; filled?: boolean; children: ReactNode }) {
+function Icon({
+  size,
+  filled,
+  strokeWidth = 2,
+  children,
+}: {
+  size: number
+  filled?: boolean
+  strokeWidth?: number
+  children: ReactNode
+}) {
   return (
     <svg
       aria-hidden="true"
@@ -10,7 +20,7 @@ function Icon({ size, filled, children }: { size: number; filled?: boolean; chil
       viewBox="0 0 24 24"
       fill={filled ? 'currentColor' : 'none'}
       stroke={filled ? 'none' : 'currentColor'}
-      strokeWidth={2}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -57,5 +67,43 @@ export const CrossIcon = ({ size = 26 }: { size?: number }) => (
 export const HeartIcon = ({ size = 32 }: { size?: number }) => (
   <Icon size={size} filled>
     <path d="M12 20.5s-7.6-4.6-9.5-9.4C1.2 7.8 3.3 4.5 6.7 4.5c2.1 0 3.6 1.1 5.3 3 1.7-1.9 3.2-3 5.3-3 3.4 0 5.5 3.3 4.2 6.6-1.9 4.8-9.5 9.4-9.5 9.4z" />
+  </Icon>
+)
+
+export const BackIcon = ({ size = 26 }: { size?: number }) => (
+  <Icon size={size} strokeWidth={2.4}>
+    <path d="M15 5l-7 7 7 7" />
+  </Icon>
+)
+
+export const ChevronIcon = ({ size = 22 }: { size?: number }) => (
+  <Icon size={size} strokeWidth={2.4}>
+    <path d="M9 6l6 6-6 6" />
+  </Icon>
+)
+
+export const WaveIcon = ({ size = 24 }: { size?: number }) => (
+  <Icon size={size}>
+    <path d="M2 10c2.5 0 2.5-3 5-3s2.5 3 5 3 2.5-3 5-3 2.5 3 5 3" />
+    <path d="M2 16c2.5 0 2.5-3 5-3s2.5 3 5 3 2.5-3 5-3 2.5 3 5 3" />
+  </Icon>
+)
+
+export const SendIcon = ({ size = 22 }: { size?: number }) => (
+  <Icon size={size} strokeWidth={2.6}>
+    <path d="M12 19V5M6 11l6-6 6 6" />
+  </Icon>
+)
+
+export const PencilIcon = ({ size = 18 }: { size?: number }) => (
+  <Icon size={size} strokeWidth={2.2}>
+    <path d="M4 20h4L19 9l-4-4L4 16v4z" />
+  </Icon>
+)
+
+export const AlertIcon = ({ size = 16 }: { size?: number }) => (
+  <Icon size={size} strokeWidth={2.4}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7.5v5.5M12 16.5v0.5" />
   </Icon>
 )

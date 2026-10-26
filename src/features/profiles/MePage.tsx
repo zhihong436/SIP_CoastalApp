@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Avatar } from '../../components/Avatar'
+import { PencilIcon } from '../../components/Icons'
 import { useAuth } from '../auth/AuthProvider'
 import { ProfileForm } from './ProfileForm'
 import { useOwnProfile } from './ProfileProvider'
@@ -14,7 +16,7 @@ export function MePage() {
   if (editing) {
     return (
       <main className="screen">
-        <h1>Edit profile</h1>
+        <h1 className="page-title">Edit profile</h1>
         <ProfileForm
           initial={profile}
           submitLabel="Save changes"
@@ -31,25 +33,37 @@ export function MePage() {
 
   return (
     <main className="screen">
-      <h1>Me</h1>
-      <dl className="details">
-        <dt>Name</dt>
-        <dd>{profile.name}</dd>
-        <dt>Age</dt>
-        <dd>{profile.age}</dd>
-        <dt>Gender</dt>
-        <dd>{profile.gender}</dd>
-        <dt>Bio</dt>
-        <dd>{profile.bio}</dd>
-      </dl>
-      <div className="actions">
-        <button type="button" className="button button--secondary" onClick={() => setEditing(true)}>
-          Edit profile
-        </button>
-        <button type="button" className="button button--secondary" onClick={() => void signOut()}>
-          Sign out
-        </button>
-      </div>
+      <h1 className="page-title">Me</h1>
+      <section className="block block--profile">
+        <Avatar name={profile.name} className="avatar avatar--profile" />
+        <h2 className="block__name">
+          {profile.name}, {profile.age}
+        </h2>
+      </section>
+      <section className="block">
+        <h2 className="label">About me</h2>
+        <p className="block__text">{profile.bio}</p>
+      </section>
+      <section className="block block--rows">
+        <h2 className="label">Basics</h2>
+        <dl className="rows">
+          <div className="rows__item">
+            <dt>Age</dt>
+            <dd>{profile.age}</dd>
+          </div>
+          <div className="rows__item">
+            <dt>Gender</dt>
+            <dd>{profile.gender}</dd>
+          </div>
+        </dl>
+      </section>
+      <button type="button" className="button button--secondary button--with-icon" onClick={() => setEditing(true)}>
+        <PencilIcon />
+        Edit profile
+      </button>
+      <button type="button" className="text-button" onClick={() => void signOut()}>
+        Sign out
+      </button>
     </main>
   )
 }

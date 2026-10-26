@@ -19,6 +19,8 @@ Two administrative scripts are run by hand against the shared project, never fro
 - `supabase/seed.sql` creates profiles for the three test accounts.
 - `supabase/reset.sql` clears decisions, matches and messages so testing can repeat.
 
+Run `npm run db:reset` to run `reset.sql` and then `seed.sql` against the linked project. **Warning: it wipes the shared test data for every tester, and the seed resets the three test profiles to their original values.**
+
 ## Pages
 
 - The app opens at `/sign-in`. After signing in, the tabs are Discover, Chats and Me, and a conversation opens its trail lobby.

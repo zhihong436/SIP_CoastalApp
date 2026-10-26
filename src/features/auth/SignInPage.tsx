@@ -39,15 +39,15 @@ export function SignInPage() {
       <h1 className="brand">Coastal Mystery</h1>
       <p className="muted">Sign in with the account your team gave you.</p>
       <form className="form" onSubmit={handleSubmit}>
-        <label className="field">
-          <span>Email</span>
+        <label className="field-card">
+          <span className="label">Email</span>
           <input type="email" name="email" autoComplete="email" required />
         </label>
-        <label className="field">
-          <span>Password</span>
+        <label className="field-card">
+          <span className="label">Password</span>
           <input type="password" name="password" autoComplete="current-password" required />
         </label>
-        <button type="submit" className="button button--primary" disabled={pending}>
+        <button type="submit" className="button button--primary button--full" disabled={pending}>
           {pending ? 'Signing in…' : 'Sign in'}
         </button>
         {error && (
