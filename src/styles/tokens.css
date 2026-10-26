@@ -13,6 +13,10 @@
   --color-accent-shadow: rgb(194 58 79 / 35%);
   /* Sea blue for coastal and trail elements only, never ordinary account, Discover or chat screens. */
   --color-coastal: #0b6e70;
+  /* Lines drawn over the camera view. They need to read on bright water, sky and sand, so they are not the brand colours. */
+  --color-camera-today: #ffffff;
+  --color-camera-future: #7de8e4;
+  --color-camera-outline: rgb(0 0 0 / 60%);
   --color-error: #b42318;
   --color-warning-bg: #fff4d6;
   --color-warning-border: #e0b84a;
