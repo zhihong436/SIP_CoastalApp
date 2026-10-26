@@ -20,6 +20,7 @@ const FLY_DURATION = 260
 const FLICK_MIN_DISTANCE = 40
 const FLICK_MIN_SPEED = 0.5
 const SPEED_WINDOW = 150
+const AXIS_LOCK_DISTANCE = 8
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -40,6 +41,10 @@ export function DiscoverPage() {
   // iOS sends few move events on a fast swipe, so release decisions use refs, not rendered state.
   const isDragging = useRef(false)
   const startX = useRef(0)
+  const startY = useRef(0)
+  const axis = useRef<'x' | 'y' | null>(null)
+  const bio = useRef<Element | null>(null)
+  const bioStart = useRef(0)
   const cardWidth = useRef(0)
   const samples = useRef<PointerSample[]>([])
   const flyTimer = useRef<number | undefined>(undefined)
@@ -83,24 +88,42 @@ export function DiscoverPage() {
     if (pending || departing || event.button > 0) return
     event.currentTarget.setPointerCapture(event.pointerId)
     isDragging.current = true
+    axis.current = null
     startX.current = event.clientX
+    startY.current = event.clientY
     cardWidth.current = event.currentTarget.offsetWidth
+    bio.current = event.currentTarget.querySelector('.card__body')
+    bioStart.current = bio.current?.scrollTop ?? 0
     samples.current = []
     recordSample(event)
     setDragging(true)
     setDx(0)
   }
 
+  // The card takes every touch (touch-action: none), so the first few pixels decide whether this drag
+  // moves the card or scrolls the bio. Leaving that to the browser made iOS cancel some swipes.
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     if (!isDragging.current) return
     recordSample(event)
-    setDx(event.clientX - startX.current)
+    const moveX = event.clientX - startX.current
+    const moveY = event.clientY - startY.current
+    if (!axis.current && Math.max(Math.abs(moveX), Math.abs(moveY)) > AXIS_LOCK_DISTANCE) {
+      axis.current = Math.abs(moveX) > Math.abs(moveY) ? 'x' : 'y'
+      // The card starts moving from where the drag was recognised, so it does not jump.
+      startX.current = event.clientX
+    }
+    if (axis.current === 'x') setDx(event.clientX - startX.current)
+    else if (axis.current === 'y' && bio.current) bio.current.scrollTop = bioStart.current - moveY
   }
 
   function onPointerUp(event: PointerEvent<HTMLDivElement>) {
     if (!isDragging.current) return
     isDragging.current = false
     setDragging(false)
+    if (axis.current !== 'x') {
+      setDx(0)
+      return
+    }
     recordSample(event)
     const distance = event.clientX - startX.current
     const [oldest] = samples.current

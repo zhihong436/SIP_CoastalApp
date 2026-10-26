@@ -212,9 +212,10 @@ a {
   -webkit-user-select: none;
 }
 
-/* pan-y keeps vertical drags for scrolling the bio, so only sideways drags move the card. */
+/* The page scrolls the bio itself, so the browser never takes over a drag and cancels it. */
 .deck__card--top {
-  touch-action: pan-y;
+  touch-action: none;
+  -webkit-touch-callout: none;
   cursor: grab;
 }
 
