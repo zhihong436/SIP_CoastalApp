@@ -1,5 +1,6 @@
 import { WaveIcon } from '../../components/Icons'
-import { introAll, introInterpreter, introInvestigator } from './stop1'
+import { introAll, introInterpreter, introInvestigator } from './holdTheShore'
+import { problems } from './problems'
 
 export type Role = 'interpreter' | 'investigator'
 
@@ -13,8 +14,8 @@ export function StopIntro({ role, onBegin }: { role: Role; onBegin: () => void }
         <span className="lobby__icon" aria-hidden="true">
           <WaveIcon size={32} />
         </span>
-        <p className="label">Stop 1</p>
-        <h2>The water line</h2>
+        <p className="label">Hold the shore</p>
+        <h2>{problems[0].title}</h2>
         <p>{introAll}</p>
         <p className="role-badge">You are the {roleNames[role]}</p>
         <p>{role === 'interpreter' ? introInterpreter : introInvestigator}</p>

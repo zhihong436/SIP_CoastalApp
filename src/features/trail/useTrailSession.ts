@@ -1,30 +1,36 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useResync } from '../../lib/useResync'
+import type { Plan, ResultId, SectionId } from './holdTheShore'
 
 export interface TrailSession {
   id: string
   match_id: string
   status: 'lobby' | 'active' | 'paused'
-  current_stop: number
+  // Null means the pair is on the board.
+  current_stop: number | null
 }
 
 export interface StopProgress {
   stop: number
   interpreter_id: string
   investigator_id: string
-  answer_correct: boolean
-  photo_taken: boolean
+  // Every checked plan, so a rise tells the Investigator's phone to play the storm.
+  attempts: number
+  last_plan: Plan | null
+  last_results: Record<SectionId, ResultId> | null
   solved_at: string | null
+  interpreter_acknowledged_at: string | null
+  investigator_acknowledged_at: string | null
 }
 
 type TrailState =
   | { status: 'loading' }
   | { status: 'error' }
   | { status: 'not_found' }
-  | { status: 'ready'; session: TrailSession; progress: StopProgress | null }
+  | { status: 'ready'; session: TrailSession; stops: StopProgress[] }
 
-// Reads a trail session the caller belongs to and the progress of its current stop.
+// Reads a trail session the caller belongs to and the progress of every problem opened so far.
 export function useTrailSession(sessionId: string) {
   const [state, setState] = useState<TrailState>({ status: 'loading' })
 
@@ -44,17 +50,17 @@ export function useTrailSession(sessionId: string) {
       setState({ status: 'not_found' })
       return
     }
-    const { data: progress, error: progressError } = await supabase
+    const { data: stops, error: progressError } = await supabase
       .from('stop_progress')
-      .select('stop, interpreter_id, investigator_id, answer_correct, photo_taken, solved_at')
+      .select(
+        'stop, interpreter_id, investigator_id, attempts, last_plan, last_results, solved_at, interpreter_acknowledged_at, investigator_acknowledged_at',
+      )
       .eq('session_id', sessionId)
-      .eq('stop', session.current_stop)
-      .maybeSingle()
     if (progressError) {
       setState((current) => (current.status === 'ready' ? current : { status: 'error' }))
       return
     }
-    setState({ status: 'ready', session: session as TrailSession, progress })
+    setState({ status: 'ready', session: session as TrailSession, stops: stops as StopProgress[] })
   }, [sessionId])
 
   useEffect(() => {

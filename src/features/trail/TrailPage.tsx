@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { BackIcon } from '../../components/Icons'
 import { useAuth } from '../auth/AuthProvider'
 import { useMatch } from '../chat/useMatch'
+import { BoardPage } from './BoardPage'
 import { InterpreterStop } from './InterpreterStop'
 import { InvestigatorStop } from './InvestigatorStop'
 import { StopIntro, roleNames, type Role } from './StopIntro'
@@ -33,10 +34,12 @@ export function TrailPage() {
     )
   }
   // A trail that has not started belongs in the lobby.
-  if (state.session.status === 'lobby' || !state.progress) {
+  if (state.session.status === 'lobby') {
     return <Navigate to={`/chats/${state.session.match_id}/trail`} replace />
   }
-  return <Stop session={state.session} progress={state.progress} onChanged={reload} />
+  const progress = state.stops.find((stop) => stop.stop === state.session.current_stop)
+  if (!progress) return <BoardPage session={state.session} stops={state.stops} onChanged={reload} />
+  return <Stop session={state.session} progress={progress} onChanged={reload} />
 }
 
 // Whether this phone has passed the intro survives a reload, so reloading mid-stop does not repeat it.
@@ -91,11 +94,9 @@ function Stop({
   if (introDone && role === 'investigator') {
     return (
       <InvestigatorStop
-        sessionId={session.id}
         matchId={session.match_id}
         progress={progress}
         partnerName={match.partner.name}
-        onChanged={onChanged}
       />
     )
   }
@@ -106,17 +107,12 @@ function Stop({
         <Link to={`/chats/${session.match_id}`} className="back-link" aria-label="Back to the conversation">
           <BackIcon />
         </Link>
-        <h1>{introDone ? `Stop 1 · ${roleNames[role]}` : 'Stop 1'}</h1>
+        <h1>{introDone ? `Hold the shore · ${roleNames[role]}` : 'Hold the shore'}</h1>
       </header>
       {!introDone ? (
         <StopIntro role={role} onBegin={begin} />
       ) : (
-        <InterpreterStop
-          sessionId={session.id}
-          progress={progress}
-          partnerName={match.partner.name}
-          onChanged={onChanged}
-        />
+        <InterpreterStop sessionId={session.id} progress={progress} onChanged={onChanged} />
       )}
     </div>
   )

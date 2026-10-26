@@ -107,3 +107,9 @@ export const AlertIcon = ({ size = 16 }: { size?: number }) => (
     <path d="M12 7.5v5.5M12 16.5v0.5" />
   </Icon>
 )
+
+export const CheckIcon = ({ size = 18 }: { size?: number }) => (
+  <Icon size={size} strokeWidth={2.6}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </Icon>
+)

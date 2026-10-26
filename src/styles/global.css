@@ -999,16 +999,6 @@ h1 {
   overflow-y: auto;
 }
 
-.clues {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  margin: 0 0 var(--space-3);
-  padding-left: 1.25rem;
-  font-size: 1.0625rem;
-  font-weight: 600;
-}
-
 .choices {
   display: flex;
   flex-direction: column;
@@ -1055,7 +1045,7 @@ h1 {
   font-size: 1.625rem;
 }
 
-/* The Investigator's camera fills the phone, with the lines and objects drawn over it. */
+/* The Investigator's camera fills the phone, with the drawn shore over it. */
 .camera {
   position: relative;
   max-width: 28rem;
@@ -1067,7 +1057,7 @@ h1 {
 }
 
 .camera__video,
-.camera__lines {
+.camera__shore {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1078,7 +1068,7 @@ h1 {
   object-fit: cover;
 }
 
-.camera__lines {
+.camera__shore {
   pointer-events: none;
 }
 
@@ -1109,32 +1099,27 @@ h1 {
   margin: 0;
 }
 
-.camera__object {
+.camera__section {
   position: absolute;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  width: var(--touch-target);
-  height: var(--touch-target);
-  padding: 0;
-  border: 2px dashed rgb(255 255 255 / 75%);
-  border-radius: 50%;
-  background: rgb(255 255 255 / 18%);
+  padding: 0.5rem 0.25rem 0;
+  border: 0;
+  background: transparent;
   color: #fff;
-  opacity: 0.8;
-  transform: translate(-50%, -50%);
   cursor: pointer;
 }
 
-.camera__object--selected {
-  border-style: solid;
-  background: var(--color-coastal);
-  opacity: 1;
+.camera__section--selected {
+  background: rgb(255 255 255 / 22%);
+  outline: 3px solid #fff;
+  outline-offset: -3px;
 }
 
-.camera__object:focus-visible {
+.camera__section:focus-visible {
   outline: 3px solid #fff;
-  outline-offset: 2px;
+  outline-offset: -3px;
 }
 
 .camera__cover {
@@ -1185,4 +1170,136 @@ h1 {
 
 .camera__actions .button {
   flex: 1;
+}
+
+/* Problem board */
+.problems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.problem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-block);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-block);
+}
+
+.problem--muted {
+  opacity: 0.55;
+}
+
+.problem__text {
+  flex: 1 1 12rem;
+}
+
+.problem h2 {
+  margin: 0;
+  color: var(--color-coastal);
+  font-size: 1.125rem;
+}
+
+.problem p {
+  margin: var(--space-1) 0 0;
+}
+
+.problem__done {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-coastal);
+  color: #fff;
+}
+
+.problem__open {
+  margin-top: 0;
+  color: var(--color-coastal);
+  text-decoration: underline;
+}
+
+/* Hold the shore, Interpreter */
+.budget {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 0 var(--space-3);
+  padding: 0.625rem var(--space-3);
+  border-radius: var(--radius-field);
+  background: var(--color-coastal);
+  /* Hides the screen's padding above the bar, so scrolling content does not show through it. */
+  box-shadow: 0 calc(-1 * var(--space-4)) 0 var(--color-bg);
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+
+.budget--over {
+  background: var(--color-error);
+}
+
+.protections,
+.storm-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.protections p,
+.storm-results p {
+  margin: var(--space-1) 0 0;
+}
+
+.storm-results__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.stop__plan-bar {
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-2) 0 calc(var(--space-2) + env(safe-area-inset-bottom));
+  background: var(--color-bg);
+}
+
+.result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border: 2px solid currentColor;
+  border-radius: var(--radius-pill);
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.result-badge--safe {
+  background: var(--color-result-safe-bg);
+  color: var(--color-result-safe);
+}
+
+.result-badge--safe_with_cost {
+  background: var(--color-result-cost-bg);
+  color: var(--color-result-cost);
+}
+
+.result-badge--lost {
+  background: var(--color-result-lost-bg);
+  color: var(--color-result-lost);
 }
