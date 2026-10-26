@@ -115,16 +115,47 @@ a {
   cursor: not-allowed;
 }
 
+/* A screen whose content fills the viewport and keeps its actions at the bottom. */
+.screen--fill {
+  height: 100dvh;
+  min-height: 0;
+}
+
 .card {
-  padding: var(--space-4);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   background: var(--color-surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
 }
 
+/* Stands in for a photo, which Phase 1 does not have. */
+.card__initials {
+  display: flex;
+  flex: 0 1 45%;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 4.5rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.card__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-3) var(--space-4);
+  overflow-y: auto;
+}
+
 .card__name {
   margin: 0;
-  font-size: 1.75rem;
+  font-size: 2rem;
+  line-height: 1.2;
 }
 
 .card__meta {

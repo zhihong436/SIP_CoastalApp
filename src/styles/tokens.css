@@ -4,8 +4,11 @@
   --color-text: #1f2a2e;
   --color-text-muted: #5d6b70;
   --color-border: #ddd5ca;
-  --color-accent: #0f8b8d;
-  --color-accent-strong: #0b6e70;
+  /* Coral. White on --color-accent is 5.2:1 and the accent on --color-bg is 4.7:1, both above WCAG AA. */
+  --color-accent: #c23a4f;
+  --color-accent-strong: #a82d41;
+  /* Sea blue for coastal and trail elements only, never ordinary account, Discover or chat screens. */
+  --color-coastal: #0b6e70;
   --color-warning-bg: #fff4d6;
   --color-warning-border: #e0b84a;
 
