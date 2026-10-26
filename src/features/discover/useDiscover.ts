@@ -74,6 +74,7 @@ export function useDiscover() {
   return {
     status,
     current: queue[0] ?? null,
+    next: queue[1] ?? null,
     pending,
     decisionError,
     newMatch,
