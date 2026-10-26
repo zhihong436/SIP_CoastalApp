@@ -8,9 +8,22 @@ import { useDiscover, type Candidate } from './useDiscover'
 
 type Direction = 'like' | 'pass'
 
+interface PointerSample {
+  x: number
+  time: number
+}
+
 const FLY_DISTANCE = 560
 const FULL_STAMP_DISTANCE = 120
 const FLY_DURATION = 260
+// A flick is a fast release after a short drag, so it decides even when the card is not a third across.
+const FLICK_MIN_DISTANCE = 40
+const FLICK_MIN_SPEED = 0.5
+const SPEED_WINDOW = 150
+
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
 
 // Swipe is presentation only. The card follows the finger, then useDiscover saves the decision.
 export function DiscoverPage() {
@@ -20,76 +33,99 @@ export function DiscoverPage() {
 
   const [dx, setDx] = useState(0)
   const [dragging, setDragging] = useState(false)
-  // The card being decided stays on top until it has flown off or sprung back.
+  // The card being decided flies off at once. It stays mounted until the save is known, so a failure can bring it back.
   const [departing, setDeparting] = useState<{ candidate: Candidate; direction: Direction } | null>(null)
+  const [flyDone, setFlyDone] = useState(false)
   const [instant, setInstant] = useState(false)
+  // iOS sends few move events on a fast swipe, so release decisions use refs, not rendered state.
+  const isDragging = useRef(false)
   const startX = useRef(0)
   const cardWidth = useRef(0)
-  const timer = useRef<number | undefined>(undefined)
+  const samples = useRef<PointerSample[]>([])
+  const flyTimer = useRef<number | undefined>(undefined)
 
-  useEffect(() => () => window.clearTimeout(timer.current), [])
+  useEffect(() => () => window.clearTimeout(flyTimer.current), [])
 
   // Once the decision is no longer pending, the queue having moved on means it saved.
   useEffect(() => {
     if (!departing || pending) return
     if (current?.user_id === departing.candidate.user_id) {
+      window.clearTimeout(flyTimer.current)
       setDeparting(null)
       setDx(0)
       return
     }
-    function finish() {
-      // The next card takes the top spot without sliding.
-      setInstant(true)
-      setDeparting(null)
-      setDx(0)
-      requestAnimationFrame(() => requestAnimationFrame(() => setInstant(false)))
-    }
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      finish()
-      return
-    }
-    setDx(departing.direction === 'like' ? FLY_DISTANCE : -FLY_DISTANCE)
-    timer.current = window.setTimeout(finish, FLY_DURATION)
-  }, [departing, pending, current])
+    if (!flyDone) return
+    // The next card takes the top spot without sliding.
+    setInstant(true)
+    setDeparting(null)
+    setDx(0)
+    requestAnimationFrame(() => requestAnimationFrame(() => setInstant(false)))
+  }, [departing, pending, current, flyDone])
 
   function startDecision(direction: Direction) {
     if (!current || pending || departing) return
+    isDragging.current = false
     setDragging(false)
     setDeparting({ candidate: current, direction })
+    setDx(direction === 'like' ? FLY_DISTANCE : -FLY_DISTANCE)
+    setFlyDone(false)
+    flyTimer.current = window.setTimeout(() => setFlyDone(true), prefersReducedMotion() ? 0 : FLY_DURATION)
     void decide(direction)
+  }
+
+  function recordSample(event: PointerEvent<HTMLDivElement>) {
+    const sample = { x: event.clientX, time: event.timeStamp }
+    samples.current = [...samples.current.filter((s) => sample.time - s.time <= SPEED_WINDOW), sample]
   }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     if (pending || departing || event.button > 0) return
     event.currentTarget.setPointerCapture(event.pointerId)
+    isDragging.current = true
     startX.current = event.clientX
     cardWidth.current = event.currentTarget.offsetWidth
+    samples.current = []
+    recordSample(event)
     setDragging(true)
     setDx(0)
   }
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (dragging) setDx(event.clientX - startX.current)
+    if (!isDragging.current) return
+    recordSample(event)
+    setDx(event.clientX - startX.current)
   }
 
-  function onPointerUp() {
-    if (!dragging) return
+  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (!isDragging.current) return
+    isDragging.current = false
     setDragging(false)
-    if (Math.abs(dx) > cardWidth.current / 3) startDecision(dx > 0 ? 'like' : 'pass')
+    recordSample(event)
+    const distance = event.clientX - startX.current
+    const [oldest] = samples.current
+    const elapsed = event.timeStamp - oldest.time
+    const speed = elapsed > 0 ? (event.clientX - oldest.x) / elapsed : 0
+    const crossedThird = Math.abs(distance) > cardWidth.current / 3
+    const flicked =
+      Math.abs(distance) >= FLICK_MIN_DISTANCE && Math.abs(speed) > FLICK_MIN_SPEED && Math.sign(speed) === Math.sign(distance)
+    if (crossedThird || flicked) startDecision(distance > 0 ? 'like' : 'pass')
     else setDx(0)
   }
 
   function onPointerCancel() {
+    isDragging.current = false
     setDragging(false)
     setDx(0)
   }
 
   const top = departing?.candidate ?? current
   // After a save the queue has moved on, so `current` is the card waiting behind the departing one.
-  const decided = departing && current?.user_id !== departing.candidate.user_id
-  const underneath = decided ? current : next
+  const saved = departing && current?.user_id !== departing.candidate.user_id
+  const underneath = saved ? current : next
   const progress = Math.min(Math.abs(dx) / FULL_STAMP_DISTANCE, 1)
-  const transition = dragging || instant ? 'none' : 'transform var(--swipe-duration) ease'
+  const transition =
+    dragging || instant || prefersReducedMotion() ? 'none' : 'transform var(--swipe-duration) ease'
   const busy = pending || !!departing
 
   return (
