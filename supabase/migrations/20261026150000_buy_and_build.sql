@@ -42,6 +42,7 @@ set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
+  v_holder uuid;
   v_row public.stop_progress%rowtype;
   v_session public.trail_sessions%rowtype;
 begin
@@ -53,7 +54,15 @@ begin
   from public.stop_progress
   where session_id = p_session_id and stop = p_stop
   for update;
-  if not found or v_user <> case p_role when 'interpreter' then v_row.interpreter_id else v_row.investigator_id end then
+  if not found then
+    raise exception 'Not allowed' using errcode = '42501';
+  end if;
+  if p_role = 'interpreter' then
+    v_holder := v_row.interpreter_id;
+  else
+    v_holder := v_row.investigator_id;
+  end if;
+  if v_user <> v_holder then
     raise exception 'Not allowed' using errcode = '42501';
   end if;
 
