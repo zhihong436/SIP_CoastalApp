@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import decodeQR from '@paulmillr/qr/decode.js'
+import decodeQR from 'qr/decode.js'
 import { CrossIcon } from '../../components/Icons'
 import { useCamera } from '../camera/useCamera'
 import { cardLinkFromText, openCardProblem } from './openCardProblem'

@@ -10,8 +10,8 @@
     "db:reset": "npx supabase db query --linked -f supabase/reset.sql && npx supabase db query --linked -f supabase/seed.sql"
   },
   "dependencies": {
-    "@paulmillr/qr": "^0.3.0",
     "@supabase/supabase-js": "^2.118.0",
+    "qr": "^0.7.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.4"
