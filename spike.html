@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Camera spike</title>
+  </head>
+  <body>
+    <div id="spike">
+      <div class="stage">
+        <video id="video" playsinline muted autoplay></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <p id="guidance" class="guidance" hidden></p>
+      <div class="controls">
+        <button id="start" type="button">Start camera</button>
+        <button id="capture" type="button" disabled>Take photo</button>
+      </div>
+      <img id="preview" alt="Captured still" hidden />
+      <p class="note">Spike page for the camera checks. Nothing is uploaded or stored.</p>
+      <ol id="log" class="log"></ol>
+    </div>
+    <script type="module" src="/src/spike/spike.ts"></script>
+  </body>
+</html>
