@@ -38,6 +38,17 @@ Values from the project owner. Public sign-up is off; test accounts are created 
 | `src/styles/` | `tokens.css` (colours and shared values), `global.css` |
 | `supabase/migrations/` | Schema, row level security, database functions |
 | `spike.html`, `src/spike/` | Camera test page. Results in `docs/spike-results.md` |
+| `ar.html`, `card.html`, `src/experiment/` | Standalone coastal AR feasibility experiment and print card. Results in `docs/ar-experiment.md` |
+| `public/ar/` | Pinned local MindAR/Three browser modules, artwork and compiled target |
+
+## Coastal AR experiment
+
+The coastal AR experiment is a separate, local feasibility page. It uses pinned, locally served
+MindAR 1.2.5 and Three.js 0.160.0 browser modules under `public/ar/vendor/`; no npm dependency was
+added. Open `/card.html` to print the separate QR card and `/ar.html` for the camera experiment.
+
+See `docs/ar-experiment.md` for local/HTTPS iPhone instructions, the compiled target, checks and
+limitations. It is not the paired trail game and does not use Supabase.
 
 ## Conventions
 

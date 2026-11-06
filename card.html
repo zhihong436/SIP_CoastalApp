@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a3c4b'/%3E%3Cpath d='M16 5l9 11-9 11-9-11z' fill='%23ffd75a'/%3E%3C/svg%3E" />
+    <meta name="theme-color" content="#f6efd9" />
+    <meta name="robots" content="noindex" />
+    <title>Print the coastal AR card</title>
+  </head>
+  <body>
+    <main class="card-page">
+      <section class="card-controls" aria-labelledby="controls-title">
+        <p class="kicker">SIP coastal activity · local experiment</p>
+        <h1 id="controls-title">Print the coastal AR card</h1>
+        <p class="lede">
+          The QR code opens the experiment. The illustration above it is the tracking image, so changing the QR link
+          does not change the artwork that the camera follows.
+        </p>
+
+        <form id="card-form" class="url-form" novalidate>
+          <label for="card-url">Experiment URL to put in the QR code</label>
+          <input
+            id="card-url"
+            name="card-url"
+            type="url"
+            inputmode="url"
+            autocomplete="url"
+            spellcheck="false"
+            required
+          />
+          <div class="url-form__actions">
+            <button id="reset-url" class="button button--quiet" type="button">Use this page's URL</button>
+            <button class="button button--primary" type="submit">Update QR</button>
+          </div>
+        </form>
+
+        <p id="url-warning" class="warning" role="status" hidden></p>
+        <p id="url-error" class="error" role="alert" hidden></p>
+
+        <div class="preview">
+          <div id="qr-code" class="qr-code" aria-label="QR code for the experiment URL"></div>
+          <div class="preview__copy">
+            <p class="preview__label">The printed QR opens:</p>
+            <p id="card-url-text" class="preview__url"></p>
+            <p class="preview__hint">Check this URL on the phone before printing a stack of cards.</p>
+          </div>
+        </div>
+
+        <button id="print-button" class="button button--primary button--wide" type="button">Print the card</button>
+
+        <details class="instructions">
+          <summary>Phone test instructions</summary>
+          <ol>
+            <li>
+              A phone cannot open a QR that points to <code>localhost</code>. Print a card only after the URL field
+              contains an address the phone can reach.
+            </li>
+            <li>
+              The simplest remote test is an HTTPS preview URL on an approved host. Open it on the phone once, scan the
+              printed QR, allow the camera, and point the rear camera at the illustration.
+            </li>
+            <li>
+              A trusted local HTTPS setup also works if the phone can reach that host on the same network. Plain HTTP
+              camera access is blocked by Safari except on localhost, which is not the phone.
+            </li>
+            <li>
+              Use A5 paper at 100%, or A4 with "fit to page". The illustration should be roughly 110–125 mm square and
+              printed in colour. Matte paper reduces glare.
+            </li>
+            <li>
+              Build and desktop checks do not prove Safari camera or tracking behaviour. Record the real-iPhone result
+              separately.
+            </li>
+          </ol>
+        </details>
+
+        <p class="back-link"><a href="ar.html">Open the experiment page</a></p>
+      </section>
+
+      <section class="card-sheet" aria-label="Printable A5 coastal AR card">
+        <div class="card-sheet__inner">
+          <header class="card-head">
+            <p class="card-kicker">Coastal protection · AR experiment</p>
+            <h1>Coastal AR</h1>
+            <p class="card-subtitle">A miniature sea, beach and breakwater that sits on this card.</p>
+          </header>
+
+          <div class="art-frame">
+            <img
+              src="./ar/targets/coastal-target.svg"
+              alt="Illustrated coastal field study with a headland, lighthouse, cottages, palms, boats, offshore rocks, a breakwater and a compass rose."
+            />
+          </div>
+
+          <div class="card-bottom">
+            <div class="card-instructions">
+              <p class="card-step"><strong>1.</strong> Scan the QR code to open the experiment.</p>
+              <p class="card-step"><strong>2.</strong> Allow the rear camera.</p>
+              <p class="card-step">
+                <strong>3.</strong> Point the camera at the illustration, not the QR code. Hold the card flat and fill
+                the frame.
+              </p>
+              <p class="card-step">
+                <strong>4.</strong> Tap a glowing ring to place a breakwater section broadside to the waves. Use
+                <strong>Rotate 90°</strong> to turn it edge-on and compare the water behind it.
+              </p>
+              <p class="card-disclaimer">
+                Illustrative only: broadside sections add a local wave shadow behind them; rotating 90° removes it.
+                Breakwaters reduce wave energy; they do not prevent higher sea levels from flooding land.
+              </p>
+            </div>
+
+            <div class="card-qr">
+              <div id="card-qr-small" class="card-qr__code" aria-hidden="true"></div>
+              <p class="card-qr__caption">Scan to open the experiment</p>
+              <p id="card-qr-url" class="card-qr__url"></p>
+              <p id="card-qr-note" class="card-qr__note" hidden></p>
+            </div>
+          </div>
+
+          <footer class="card-foot">
+            <span>USI2001 Social Innovation Project · feasibility experiment</span>
+            <span>Illustration and target compiled locally</span>
+          </footer>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/experiment/card.ts"></script>
+  </body>
+</html>
