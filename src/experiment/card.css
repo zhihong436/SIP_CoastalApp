@@ -26,7 +26,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -84,7 +85,8 @@ input {
   font-weight: 700;
 }
 
-.url-form input {
+.url-form input,
+.url-form select {
   width: 100%;
   min-height: 3rem;
   padding: 0.55rem 0.8rem;
@@ -95,7 +97,8 @@ input {
   font-size: 0.95rem;
 }
 
-.url-form input:focus {
+.url-form input:focus,
+.url-form select:focus {
   border-color: var(--teal);
   outline: 3px solid rgb(20 123 139 / 22%);
   outline-offset: 0;

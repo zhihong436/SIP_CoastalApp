@@ -1,0 +1,882 @@
+/* Break the waves. The camera stage sits under these controls; the cream sheet stays readable on any frame. */
+.hunt {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 28rem;
+  height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 20%, rgb(221 204 170 / 26%), transparent 38%),
+    linear-gradient(155deg, #173c3e 0%, #2b5654 54%, #91a79b 100%);
+  color: var(--color-text);
+}
+
+.hunt--clue {
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+.hunt__stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: transparent;
+}
+
+.hunt__stage--live {
+  background: #0d2b30;
+}
+
+.hunt__stage video,
+.hunt__stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hunt__stage canvas {
+  z-index: 1;
+}
+
+.hunt__header {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: calc(0.5rem + env(safe-area-inset-top)) 0.75rem 0.5rem;
+  color: #fff;
+  background: linear-gradient(rgb(8 35 38 / 72%), transparent);
+}
+
+.hunt__icon-button {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 1rem;
+  background: rgb(12 45 48 / 42%);
+  color: #fff;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hunt__icon-button:focus-visible,
+.hunt button:focus-visible {
+  outline: 3px solid #ffe9a8;
+  outline-offset: 2px;
+}
+
+.hunt__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.hunt__title small {
+  display: block;
+  overflow: hidden;
+  color: rgb(255 255 255 / 78%);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hunt__title h1 {
+  overflow: hidden;
+  margin: 0.12rem 0 0;
+  color: #fff;
+  font-size: 1.17rem;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hunt__goal {
+  position: absolute;
+  top: calc(4.45rem + env(safe-area-inset-top));
+  right: 0.9rem;
+  left: 0.9rem;
+  z-index: 9;
+  padding: 0.68rem 0.8rem;
+  border: 1px solid rgb(255 255 255 / 58%);
+  border-radius: 1rem;
+  background: rgb(255 253 241 / 93%);
+  box-shadow: 0 4px 16px rgb(12 44 43 / 12%);
+}
+
+.hunt__goal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-coastal);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.hunt__dots {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.hunt__dots i {
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: #b9d4cc;
+}
+
+.hunt__dots i[data-on='true'] {
+  background: var(--color-coastal);
+}
+
+.hunt__goal p {
+  margin: 0.3rem 0 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.hunt__tracking {
+  position: absolute;
+  top: calc(9.85rem + env(safe-area-inset-top));
+  left: 1.1rem;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 88%);
+  color: #29443d;
+  font-size: 0.65rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+}
+
+.hunt__tracking > span:first-child {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: #8b9f96;
+}
+
+.hunt__tracking[data-state='tracking'] > span:first-child {
+  background: #16826d;
+}
+
+.hunt__tracking[data-state='scanning'] > span:first-child,
+.hunt__tracking[data-state='starting'] > span:first-child {
+  background: #c18427;
+}
+
+.hunt__tracking[data-state='tracking-lost'] > span:first-child {
+  background: #b24b3d;
+}
+
+.hunt__hint {
+  position: absolute;
+  top: 34%;
+  right: 1.5rem;
+  left: 1.5rem;
+  z-index: 11;
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.9rem;
+  background: rgb(10 39 42 / 82%);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.45;
+  backdrop-filter: blur(3px);
+}
+
+.hunt__lost {
+  position: absolute;
+  top: 32%;
+  right: 1.2rem;
+  left: 1.2rem;
+  z-index: 12;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgb(10 39 42 / 91%);
+  color: #fff;
+  text-align: center;
+}
+
+.hunt__lost strong {
+  display: block;
+  font-size: 1.08rem;
+}
+
+.hunt__lost p {
+  margin: 0.4rem 0 0;
+  color: rgb(255 255 255 / 82%);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.hunt__setup {
+  position: absolute;
+  top: 55%;
+  right: 1.05rem;
+  left: 1.05rem;
+  z-index: 12;
+  max-height: min(48dvh, 22rem);
+  padding: 1rem;
+  overflow-y: auto;
+  border: 1px solid rgb(255 255 255 / 62%);
+  border-radius: 1.2rem;
+  background: rgb(255 251 242 / 96%);
+  box-shadow: var(--shadow-panel);
+  transform: translateY(-50%);
+}
+
+.hunt__setup--warning {
+  border-color: rgb(194 58 79 / 35%);
+}
+
+.hunt__setup-icon {
+  display: grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.9rem;
+  background: #e5f1ed;
+  color: var(--color-coastal);
+  place-items: center;
+}
+
+.hunt__setup h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.hunt__setup p {
+  margin: 0.45rem 0 0.85rem;
+  color: var(--color-text-strong);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.hunt__setup .button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.hunt__fine {
+  margin: 0.65rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.hunt-sheet {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 14;
+  max-height: 58dvh;
+  padding: 0.55rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: #fffcf7;
+  box-shadow: 0 -8px 32px rgb(20 51 47 / 16%);
+}
+
+.hunt-sheet__handle {
+  width: 2rem;
+  height: 0.2rem;
+  margin: 0 auto 0.55rem;
+  border-radius: 1rem;
+  background: #d8d4ca;
+}
+
+.hunt-lens {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 2.8rem;
+  padding: 0 0.75rem;
+  border: 1px solid #d4e6dd;
+  border-radius: 0.85rem;
+  background: #e8f2ed;
+  color: var(--color-coastal);
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.hunt-lens > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.hunt-lens__switch {
+  position: relative;
+  flex: none;
+  width: 1.75rem;
+  height: 1.1rem;
+  border-radius: 1rem;
+  background: #b5c9be;
+}
+
+.hunt-lens__switch::after {
+  position: absolute;
+  top: 0.12rem;
+  left: 0.12rem;
+  width: 0.86rem;
+  height: 0.86rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+  content: '';
+}
+
+.hunt-lens[aria-pressed='true'] .hunt-lens__switch {
+  background: var(--color-coastal);
+}
+
+.hunt-lens[aria-pressed='true'] .hunt-lens__switch::after {
+  left: 0.77rem;
+}
+
+.hunt-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.7rem 0 0.45rem;
+}
+
+.hunt-sheet__head strong {
+  font-size: 0.73rem;
+}
+
+.hunt-sheet__head span {
+  color: var(--color-text-muted);
+  font-size: 0.62rem;
+}
+
+.hunt-pieces {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.hunt-piece {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 3rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #dfd8cc;
+  border-radius: 0.8rem;
+  background: #fff;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hunt-piece[data-selected='true'] {
+  border: 1.5px solid var(--color-accent);
+  background: #fff3f3;
+}
+
+.hunt[data-side='b'] .hunt-piece[data-selected='true'] {
+  border-color: #a77823;
+  background: #fff8e7;
+}
+
+.hunt-piece__swatch {
+  flex: none;
+  width: 1.65rem;
+  height: 0.9rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(135deg, #aab4b0 0 52%, #7d8987 52% 100%);
+  box-shadow: inset 0 -0.18rem 0 var(--color-accent);
+}
+
+.hunt-piece__swatch[data-owner='b'] {
+  box-shadow: inset 0 -0.18rem 0 #b98a2e;
+}
+
+.hunt-piece > span:nth-child(2) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.hunt-piece strong {
+  font-size: 0.7rem;
+}
+
+.hunt-piece small {
+  color: var(--color-text-muted);
+  font-size: 0.6rem;
+}
+
+.hunt-piece svg {
+  color: var(--color-coastal);
+}
+
+.hunt-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 3rem;
+  margin-top: 0.45rem;
+}
+
+.hunt-controls__button {
+  min-height: 2.75rem;
+  padding: 0 0.7rem;
+  font-size: 0.7rem;
+}
+
+.hunt-controls__button:first-child {
+  border: 1px solid var(--color-border);
+  background: transparent;
+}
+
+.hunt-controls__button:nth-child(2) {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.hunt-controls__tip {
+  flex: 1;
+  color: var(--color-text-muted);
+  font-size: 0.62rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.hunt-ready {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.45rem;
+}
+
+.hunt-ready__button {
+  flex: 1;
+  min-height: 3rem;
+  background: var(--color-coastal);
+  border-color: var(--color-coastal);
+  font-size: 0.76rem;
+}
+
+.hunt-partner {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 6.2rem;
+}
+
+.hunt-partner .avatar {
+  width: 1.7rem;
+  height: 1.7rem;
+  font-size: 0.65rem;
+}
+
+.hunt-partner > span {
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text-muted);
+  font-size: 0.56rem;
+  line-height: 1.25;
+}
+
+.hunt-partner strong {
+  color: var(--color-text);
+  font-size: 0.62rem;
+}
+
+.hunt-sheet__note {
+  min-height: 2.1em;
+  margin: 0.55rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.64rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.hunt__notice {
+  margin: 0.65rem 0 0;
+  color: var(--color-error);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.hunt-sheet.hunt-result {
+  padding-top: 0.7rem;
+}
+
+.hunt-result__kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--color-coastal);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hunt-result__kicker--warning {
+  color: #875516;
+}
+
+.hunt-result h2 {
+  margin: 0.3rem 0 0.45rem;
+  font-size: 1.45rem;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+
+.hunt-result__summary {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  line-height: 1.55;
+}
+
+.hunt-result__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.65rem 0;
+}
+
+.hunt-result__checks span {
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.5rem;
+  background: #e7f2eb;
+  color: #206451;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.hunt-result__checks span[data-bad='true'] {
+  background: #faead7;
+  color: #9a421e;
+}
+
+.hunt-result__failures {
+  margin: 0 0 0.65rem;
+  padding-left: 1rem;
+  color: var(--color-text-strong);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.hunt-result__fact {
+  margin: 0.65rem 0;
+  padding: 0.7rem;
+  border-radius: 0.75rem;
+  background: #edf4ef;
+  color: #325a4f;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.hunt-result__fact strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--color-coastal);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hunt-result__revision {
+  margin: 0.45rem 0 0.55rem;
+  color: var(--color-text-muted);
+  font-size: 0.6rem;
+  text-align: center;
+}
+
+.hunt-result .button {
+  min-height: 3rem;
+  font-size: 0.76rem;
+}
+
+.hunt-result__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.hunt-result__actions .button {
+  padding: 0 0.55rem;
+  font-size: 0.68rem;
+}
+
+.hunt-help {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  padding: calc(1.2rem + env(safe-area-inset-top)) 1.2rem calc(1.2rem + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: rgb(9 35 37 / 94%);
+  color: #fff;
+  backdrop-filter: blur(6px);
+}
+
+.hunt-help h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1.45rem;
+  letter-spacing: -0.03em;
+}
+
+.hunt-help p {
+  margin: 0 0 0.8rem;
+  color: rgb(255 255 255 / 84%);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.hunt-help .button {
+  margin-top: 0.5rem;
+  background: #fff;
+  border-color: #fff;
+  color: var(--color-coastal);
+}
+
+.hunt-clue {
+  display: flex;
+  flex-direction: column;
+  max-width: 28rem;
+  min-height: calc(100dvh - 4rem);
+  margin: 0 auto;
+  padding: 0.8rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+.hunt-kicker {
+  margin: 0 0 0.5rem;
+  color: var(--color-coastal);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.hunt-clue h2 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+}
+
+.hunt-clue__body {
+  margin: 0.8rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.hunt-clue__card {
+  margin: 0.35rem 0 1rem;
+  padding: 1.15rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.2rem;
+  background: var(--color-surface);
+  box-shadow: 0 4px 18px rgb(36 73 60 / 6%);
+}
+
+.hunt-clue__card small {
+  display: block;
+  margin-bottom: 0.7rem;
+  color: var(--color-coastal);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hunt-clue__card p {
+  margin: 0;
+  color: #365d51;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  line-height: 1.42;
+}
+
+.hunt-clue__card footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--color-divider);
+  color: var(--color-text-muted);
+  font-size: 0.65rem;
+}
+
+.hunt-clue__card footer strong {
+  color: var(--color-text);
+}
+
+.hunt-clue__progress {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0.3rem 0 1rem;
+}
+
+.hunt-clue__progress span {
+  flex: 1;
+  height: 0.3rem;
+  border-radius: 1rem;
+  background: #e0dbd1;
+}
+
+.hunt-clue__progress span[data-done='true'] {
+  background: var(--color-coastal);
+}
+
+.hunt-clue__not-built {
+  margin: 0 0 1rem;
+  padding: 0.8rem;
+  border-radius: 0.8rem;
+  background: #fff4d6;
+  color: #6b4a0b;
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.hunt-clue__not-built strong {
+  display: block;
+}
+
+.hunt-clue .button {
+  margin-top: auto;
+}
+
+.hunt-scanner.hunt-scanner {
+  z-index: 50;
+}
+
+.hunt-scanner .camera {
+  max-width: none;
+}
+
+@media (max-height: 700px) {
+  .hunt__goal {
+    top: calc(4.2rem + env(safe-area-inset-top));
+    padding: 0.55rem 0.7rem;
+  }
+
+  .hunt__goal p {
+    font-size: 0.78rem;
+  }
+
+  .hunt__tracking {
+    top: calc(9.55rem + env(safe-area-inset-top));
+  }
+
+  .hunt-sheet {
+    max-height: 56dvh;
+    padding-top: 0.4rem;
+    padding-bottom: calc(0.4rem + env(safe-area-inset-bottom));
+  }
+
+  .hunt-sheet__handle {
+    margin-bottom: 0.3rem;
+  }
+
+  .hunt-sheet__head {
+    margin-top: 0.35rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .hunt-piece {
+    min-height: 2.75rem;
+  }
+
+  .hunt-lens {
+    min-height: 2.6rem;
+  }
+
+  .hunt-controls,
+  .hunt-ready {
+    margin-top: 0.3rem;
+  }
+
+  .hunt-sheet__note {
+    margin-top: 0.35rem;
+  }
+
+  .hunt__setup {
+    top: 55%;
+    max-height: 46dvh;
+  }
+}
+
+@media (min-width: 30rem) {
+  .hunt {
+    box-shadow: 0 0 48px rgb(15 43 40 / 20%);
+  }
+}
+
+.hunt--clue .hunt__header {
+  position: static;
+  color: var(--color-text);
+  background: none;
+}
+
+.hunt--clue .hunt__title small {
+  color: var(--color-text-muted);
+}
+
+.hunt--clue .hunt__title h1 {
+  color: var(--color-text);
+}
+
+.hunt--clue .hunt__icon-button {
+  border-color: var(--color-border);
+  background: rgb(255 255 255 / 70%);
+  color: var(--color-text);
+}
+
+/* Hunt actions use the coastal colour; the coral accent stays for the rest of the app. */
+.hunt .button--primary {
+  border-color: var(--color-coastal);
+  background: var(--color-coastal);
+}

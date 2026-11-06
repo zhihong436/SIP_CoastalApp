@@ -9,6 +9,7 @@ export interface TrailSession {
   status: 'lobby' | 'active' | 'paused'
   // Null means the pair is on the board.
   current_stop: number | null
+  game_version: 'legacy' | 'hunt-v1'
 }
 
 export interface StopProgress {
@@ -39,7 +40,7 @@ export function useTrailSession(sessionId: string) {
   const load = useCallback(async () => {
     const { data: session, error } = await supabase
       .from('trail_sessions')
-      .select('id, match_id, status, current_stop')
+      .select('id, match_id, status, current_stop, game_version')
       .eq('id', sessionId)
       .maybeSingle()
     if (error) {

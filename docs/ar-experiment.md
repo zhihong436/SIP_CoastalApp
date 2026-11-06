@@ -7,7 +7,9 @@ breakwater section; broadside sections add a local wave shadow behind them, and 
 turns it edge-on so its added shelter drops away. Reset restores the baseline wave field.
 
 This is **not** the paired trail game. It has no Supabase, database, authentication, pairing,
-persistence or deployment changes. It is a feasibility check for the AR and interaction idea.
+persistence or deployment changes. It is a feasibility check for the AR and interaction idea. The
+integrated first hunt stop is documented separately in `docs/break-the-waves.md` and reuses the same
+pinned assets without changing this experiment or its card default.
 
 ## Try it locally
 

@@ -3,6 +3,7 @@ import encodeQR from 'qr'
 import './card.css'
 
 const form = byId<HTMLFormElement>('card-form')
+const variantSelect = byId<HTMLSelectElement>('card-variant')
 const urlInput = byId<HTMLInputElement>('card-url')
 const resetButton = byId<HTMLButtonElement>('reset-url')
 const printButton = byId<HTMLButtonElement>('print-button')
@@ -13,6 +14,17 @@ const smallQr = byId<HTMLElement>('card-qr-small')
 const previewUrl = byId<HTMLElement>('card-url-text')
 const cardUrl = byId<HTMLElement>('card-qr-url')
 const cardQrNote = byId<HTMLElement>('card-qr-note')
+const cardKicker = byId<HTMLElement>('card-kicker')
+const cardTitle = byId<HTMLElement>('card-title')
+const cardSubtitle = byId<HTMLElement>('card-subtitle')
+const experimentSteps = byId<HTMLElement>('card-steps-experiment')
+const huntSteps = byId<HTMLElement>('card-steps-hunt')
+
+type CardVariant = 'experiment' | 'hunt'
+
+function currentVariant(): CardVariant {
+  return variantSelect.value === 'hunt' ? 'hunt' : 'experiment'
+}
 
 function byId<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id)
@@ -20,8 +32,20 @@ function byId<T extends HTMLElement>(id: string): T {
   return element as T
 }
 
-function defaultExperimentUrl() {
-  return new URL('ar.html', window.location.href).href
+function defaultUrlFor(variant: CardVariant) {
+  const page = variant === 'hunt' ? 'scan/break-the-waves' : 'ar.html'
+  return new URL(page, window.location.href).href
+}
+
+function updateCardCopy() {
+  const hunt = currentVariant() === 'hunt'
+  cardKicker.textContent = hunt ? 'Coastal protection · paired hunt' : 'Coastal protection · AR experiment'
+  cardTitle.textContent = hunt ? 'Break the waves' : 'Coastal AR'
+  cardSubtitle.textContent = hunt
+    ? 'A two-phone puzzle on one printed coast. Both players build; both see the accepted changes.'
+    : 'A miniature sea, beach and breakwater that sits on this card.'
+  experimentSteps.hidden = hunt
+  huntSteps.hidden = !hunt
 }
 
 function parseExperimentUrl(value: string): string | null {
@@ -120,8 +144,14 @@ form.addEventListener('submit', (event) => {
 urlInput.addEventListener('input', () => updateFromInput(false))
 urlInput.addEventListener('change', () => updateFromInput())
 
+variantSelect.addEventListener('change', () => {
+  updateCardCopy()
+  urlInput.value = defaultUrlFor(currentVariant())
+  updateFromInput()
+})
+
 resetButton.addEventListener('click', () => {
-  urlInput.value = defaultExperimentUrl()
+  urlInput.value = defaultUrlFor(currentVariant())
   updateFromInput()
 })
 
@@ -131,7 +161,8 @@ printButton.addEventListener('click', () => {
   if (!printButton.disabled) window.print()
 })
 
-// Start with the URL of this page's ar.html. This is honest local state: if it is localhost,
-// the warning tells the user that a phone cannot use it.
-urlInput.value = defaultExperimentUrl()
+// Start on the standalone experiment, preserving its old default. Switching to the hunt card
+// proposes the canonical /scan/break-the-waves URL for this host.
+updateCardCopy()
+urlInput.value = defaultUrlFor(currentVariant())
 updateFromInput()

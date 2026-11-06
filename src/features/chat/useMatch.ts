@@ -7,12 +7,14 @@ export interface Partner {
   name: string
 }
 
+export type MatchSide = 'a' | 'b'
+
 // Not found covers a match that does not exist and one the caller does not belong to.
 type MatchState =
   | { status: 'loading' }
   | { status: 'error' }
   | { status: 'not_found' }
-  | { status: 'ready'; partner: Partner }
+  | { status: 'ready'; partner: Partner; side: MatchSide }
 
 // Reads a match the caller belongs to and the other member's name.
 export function useMatch(matchId: string) {
@@ -45,7 +47,11 @@ export function useMatch(matchId: string) {
       setState({ status: 'error' })
       return
     }
-    setState({ status: 'ready', partner: { id: partnerId, name: partner.name } })
+    setState({
+      status: 'ready',
+      partner: { id: partnerId, name: partner.name },
+      side: match.participant_a === userId ? 'a' : 'b',
+    })
   }, [matchId, userId])
 
   useEffect(() => {
