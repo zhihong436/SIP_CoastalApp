@@ -11,10 +11,19 @@ export function avatarOf(name: string) {
   return { initials, gradient: `var(--avatar-gradient-${hash % 4})` }
 }
 
-export function Avatar({ name, className }: { name: string; className: string }) {
+export function Avatar({
+  name,
+  className,
+  background,
+}: {
+  name: string
+  className: string
+  // Optional presentation override. The name's coral gradient remains the default.
+  background?: string
+}) {
   const { initials, gradient } = avatarOf(name)
   return (
-    <span className={className} style={{ background: gradient }} aria-hidden="true">
+    <span className={className} style={{ background: background ?? gradient }} aria-hidden="true">
       {initials}
     </span>
   )

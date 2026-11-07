@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
-import { CrossIcon, DiscoverIcon, HeartIcon } from '../../components/Icons'
+import { LighthouseArt } from '../../components/CoastalArt'
+import { CrossIcon, HeartIcon } from '../../components/Icons'
 import { ProfileCard } from '../profiles/ProfileCard'
 import { useOwnProfile } from '../profiles/ProfileProvider'
 import { useDiscover, type Candidate } from './useDiscover'
@@ -25,9 +26,15 @@ export function DiscoverPage() {
   const [departing, setDeparting] = useState<{ candidate: Candidate; direction: Direction } | null>(null)
   const [flyDone, setFlyDone] = useState(false)
   const [instant, setInstant] = useState(false)
+  // Presentation only: keep the empty composition on screen while a reload is in flight.
+  const [refreshing, setRefreshing] = useState(false)
   const flyTimer = useRef<number | undefined>(undefined)
 
   useEffect(() => () => window.clearTimeout(flyTimer.current), [])
+
+  useEffect(() => {
+    if (refreshing && status !== 'loading') setRefreshing(false)
+  }, [refreshing, status])
 
   // Once the decision is no longer pending, the queue having moved on means it saved.
   useEffect(() => {
@@ -59,28 +66,52 @@ export function DiscoverPage() {
   const flyX = departing ? (departing.direction === 'like' ? FLY_DISTANCE : -FLY_DISTANCE) : 0
   const transition = instant || prefersReducedMotion() ? 'none' : 'transform var(--swipe-duration) ease'
   const busy = pending || !!departing
+  const showEmpty = !top && (status === 'ready' || (refreshing && status === 'loading'))
+
+  function checkAgain() {
+    if (refreshing) return
+    setRefreshing(true)
+    void reload()
+  }
 
   return (
     <main className="discover">
       <h1 className="screen-title">Discover</h1>
-      {status === 'loading' && <p className="muted discover__message">Loading…</p>}
+      {status === 'loading' && !showEmpty && (
+        <div className="discover-loading" role="status" aria-live="polite">
+          <span className="spinner discover-loading__spinner" aria-hidden="true" />
+          <p>Looking for new people…</p>
+        </div>
+      )}
       {status === 'error' && (
         <div className="empty-state">
           <p role="alert">Could not load profiles. Check your connection and try again.</p>
-          <button type="button" className="button button--primary" onClick={reload}>
+          <button type="button" className="button button--primary" onClick={() => void reload()}>
             Try again
           </button>
         </div>
       )}
-      {status === 'ready' && !top && (
-        <div className="empty-state">
-          <span className="empty-state__icon">
-            <DiscoverIcon size={40} />
-          </span>
-          <p className="empty-state__title">You&rsquo;re all caught up</p>
-          <p className="muted">There is no one new to see right now.</p>
-          <button type="button" className="button button--secondary" onClick={reload}>
-            Check again
+      {showEmpty && (
+        <div className="discover-empty">
+          <div className="discover-empty__art">
+            <LighthouseArt />
+          </div>
+          <div className="discover-empty__copy">
+            <p className="discover-empty__eyebrow">A quiet stretch of coast</p>
+            <h2 className="discover-empty__title">You&rsquo;re all caught up</h2>
+            <p className="discover-empty__text">
+              There is no one new to see right now. You can check again whenever you like.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="discover-empty__check"
+            disabled={refreshing}
+            aria-busy={refreshing}
+            onClick={checkAgain}
+          >
+            {refreshing && <span className="spinner" aria-hidden="true" />}
+            {refreshing ? 'Checking again…' : 'Check again'}
           </button>
         </div>
       )}

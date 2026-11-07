@@ -1,6 +1,8 @@
 import { isAuthRetryableFetchError } from '@supabase/supabase-js'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { ShorelineArt } from '../../components/CoastalArt'
+import { AlertIcon } from '../../components/Icons'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from './AuthProvider'
 
@@ -38,30 +40,44 @@ export function SignInPage() {
   }
 
   return (
-    <main className="screen screen--centered">
-      <h1 className="brand">Coastal Mystery</h1>
-      <p className="muted">Sign in with the account your team gave you.</p>
-      <form className="form" onSubmit={handleSubmit}>
-        <label className="field-card">
-          <span className="label">Email</span>
-          <input type="email" name="email" autoComplete="email" required />
-        </label>
-        <label className="field-card">
-          <span className="label">Password</span>
-          <input type="password" name="password" autoComplete="current-password" required />
-        </label>
-        <button type="submit" className="button button--primary button--full" disabled={pending}>
-          {pending ? 'Signing in…' : 'Sign in'}
-        </button>
-        {error && (
-          <p className="form-message form-message--error" role="alert">
-            {error}
-          </p>
-        )}
-      </form>
-      <p className="muted small">
-        <a href="/spike.html">Camera spike</a>
-      </p>
+    <main className="signin">
+      <div className="signin__art">
+        <ShorelineArt />
+      </div>
+      <div className="signin__body">
+        <h1 className="signin__brand">
+          Coastal <span>Mystery</span>
+        </h1>
+        <p className="signin__lede">Sign in with the account your team gave you.</p>
+        <form className="signin__form" onSubmit={handleSubmit}>
+          <label className="auth-field">
+            <span className="auth-field__label">Email</span>
+            <input type="email" name="email" autoComplete="email" required />
+          </label>
+          <label className="auth-field">
+            <span className="auth-field__label">Password</span>
+            <input type="password" name="password" autoComplete="current-password" required />
+          </label>
+          <button
+            type="submit"
+            className="button button--primary button--full signin__submit"
+            disabled={pending}
+            aria-busy={pending}
+          >
+            {pending && <span className="spinner" aria-hidden="true" />}
+            {pending ? 'Signing in…' : 'Sign in'}
+          </button>
+          {error && (
+            <p className="signin__error" role="alert">
+              <AlertIcon size={18} />
+              <span>{error}</span>
+            </p>
+          )}
+        </form>
+        <p className="signin__footer">
+          <a href="/spike.html">Camera spike</a>
+        </p>
+      </div>
     </main>
   )
 }
