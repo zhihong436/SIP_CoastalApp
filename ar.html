@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a3c4b'/%3E%3Cpath d='M16 5l9 11-9 11-9-11z' fill='%23ffd75a'/%3E%3C/svg%3E" />
+    <meta name="theme-color" content="#062b36" />
+    <meta name="description" content="A local image-tracking AR feasibility experiment for the coastal protection activity." />
+    <meta name="robots" content="noindex" />
+    <title>Coastal AR experiment</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./ar/vendor/three-0.160.0/build/three.module.min.js",
+          "three/addons/": "./ar/vendor/three-0.160.0/examples/jsm/",
+          "mindar-image-three": "./ar/vendor/mind-ar-1.2.5/mindar-image-three.prod.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="ar-app">
+      <div id="ar-stage" class="ar-stage" aria-hidden="true"></div>
+      <div class="ar-shade" aria-hidden="true"></div>
+
+      <header class="ar-topbar">
+        <div class="ar-brand">
+          <span class="ar-brand__mark" aria-hidden="true">◈</span>
+          <span>Coastal AR <em>experiment</em></span>
+        </div>
+        <div class="ar-topbar__actions">
+          <a class="ar-link" href="card.html">Card &amp; QR</a>
+          <button id="stop-button" class="ar-stop" type="button" hidden>Stop</button>
+        </div>
+      </header>
+
+      <div id="live-pill" class="ar-live-pill" data-state="searching" hidden aria-live="polite">
+        <span class="ar-live-pill__dot" aria-hidden="true"></span>
+        <span id="live-text">Looking for the card</span>
+      </div>
+
+      <section id="start-screen" class="ar-panel ar-panel--intro" aria-labelledby="intro-title">
+        <p class="ar-kicker">SIP coastal activity · feasibility check</p>
+        <h1 id="intro-title">Coastal AR</h1>
+        <p class="ar-lede">
+          Point the rear camera at the printed coastal illustration. A miniature animated sea, beach and breakwater
+          will sit on the card in perspective.
+        </p>
+        <ol class="ar-steps">
+          <li>Print the A5 card, or show it on a second screen.</li>
+          <li>Allow the rear camera when the browser asks.</li>
+          <li>Hold the card flat in good light and fill the frame with the illustration.</li>
+          <li>Tap a glowing ring to place a breakwater section broadside to the waves, then rotate it 90° to turn it edge-on and compare the water behind it.</li>
+        </ol>
+        <button id="start-button" class="ar-button ar-button--primary" type="button">Start rear camera</button>
+        <p class="ar-fine">Camera frames are processed on this device. Nothing is recorded or uploaded.</p>
+        <details class="ar-details">
+          <summary>What this shows — and what it does not</summary>
+          <p>
+            Waves roll in from the open sea. A breakwater section placed broadside to them casts a simple wave shadow:
+            the water behind that section flattens while the water in front stays rough. Rotating it 90° turns it
+            edge-on, so its added shelter drops away. The island's own lee is the baseline; the player-built shadow is
+            separate.
+          </p>
+          <p>
+            This is a simplified illustration, not an engineering simulation. Breakwaters reduce wave energy; they do not
+            prevent higher sea levels from flooding land.
+          </p>
+          <p>This is a standalone feasibility experiment, not the paired trail game and not a finished activity.</p>
+        </details>
+        <p class="ar-intro-links">
+          <a href="card.html">Print the card or change the QR link</a>
+          <span aria-hidden="true">·</span>
+          <span>iPhone camera needs HTTPS</span>
+        </p>
+      </section>
+
+      <section id="status-panel" class="ar-panel ar-panel--status" hidden aria-live="polite">
+        <p id="status-kicker" class="ar-kicker">Starting</p>
+        <h2 id="status-title">Starting the camera…</h2>
+        <p id="status-copy" class="ar-lede"></p>
+        <div class="ar-panel__actions">
+          <button id="retry-button" class="ar-button ar-button--primary" type="button" hidden>Try again</button>
+          <button id="cancel-start-button" class="ar-button ar-button--quiet" type="button" hidden>Cancel start</button>
+        </div>
+      </section>
+
+      <div class="ar-bottom-stack">
+        <p id="ar-hint" class="ar-hint" hidden>
+          <span class="ar-hint__icon" aria-hidden="true">◎</span>
+          <span id="hint-text"></span>
+        </p>
+        <footer id="ar-controls" class="ar-controls" hidden>
+          <p id="control-status" class="ar-control-status" aria-live="polite">
+            Model controls unlock while the illustration is tracked.
+          </p>
+          <div class="ar-controls__actions">
+            <button id="rotate-button" class="ar-button ar-button--primary" type="button" disabled>Rotate 90°</button>
+            <button id="reset-button" class="ar-button ar-button--quiet" type="button" disabled>Reset sections</button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <script type="module" src="/src/experiment/ar.ts"></script>
+  </body>
+</html>

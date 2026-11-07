@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a3c4b'/%3E%3Cpath d='M16 5l8 10-8 10-8-10z' fill='%23ffd75a'/%3E%3C/svg%3E"
+    />
+    <meta name="theme-color" content="#0a2e36" />
+    <meta
+      name="description"
+      content="An isolated Break the waves feasibility experiment: the approved lighthouse-island diorama placed on an estimated floor with 8th Wall world tracking. No account, save or paired-game progression."
+    />
+    <meta name="robots" content="noindex" />
+    <title>Break the waves · World-tracking experiment</title>
+  </head>
+  <body>
+    <div id="world-app" data-phase="boot">
+      <canvas id="world-canvas" aria-hidden="true"></canvas>
+      <div class="world-backdrop" aria-hidden="true"></div>
+
+      <div id="tracking-warning" class="world-tracking-warning" role="status" hidden>
+        <strong>Tracking limited</strong>
+        <span>Hold still and aim at a textured floor. The island is hidden until tracking returns.</span>
+      </div>
+
+      <header class="world-header">
+        <p class="world-kicker">Break the waves · world-tracking experiment</p>
+        <h1>Break the waves</h1>
+        <p class="world-lede">
+          The approved lighthouse island, placed on your floor with 8th Wall world tracking.
+          <strong>Local only — no account, save, sync or real puzzle progression.</strong>
+        </p>
+      </header>
+
+      <main class="world-panel" aria-label="World-tracking experiment controls">
+        <div class="world-status" role="status" aria-live="polite">
+          <span class="world-status-dot" aria-hidden="true"></span>
+          <div class="world-status-copy">
+            <strong id="status-title">Preparing engine…</strong>
+            <p id="status-detail">No camera starts until you press Start AR.</p>
+          </div>
+        </div>
+
+        <div id="idle-actions" class="world-actions">
+          <button id="start" type="button" class="world-primary" disabled>Start AR</button>
+          <button id="reload" type="button" hidden>Reload page</button>
+        </div>
+
+        <div id="run-actions" class="world-actions" hidden>
+          <button id="replace" type="button" disabled>Re-place</button>
+          <button id="stop" type="button">Stop camera</button>
+        </div>
+
+        <div class="world-size">
+          <div class="world-size-label">
+            <label class="world-label" for="island-size">Island size</label>
+            <output id="island-size-value" for="island-size">100%</output>
+          </div>
+          <input id="island-size" type="range" min="50" max="200" step="5" value="100" />
+        </div>
+
+        <div class="world-state">
+          <span class="world-label" id="state-label">Illustrative local state</span>
+          <div class="world-segmented" role="group" aria-labelledby="state-label">
+            <button type="button" data-state="exposed" aria-pressed="false">Exposed</button>
+            <button type="button" data-state="protected" aria-pressed="true">Protected</button>
+          </div>
+          <p id="state-copy" class="world-state-copy">
+            Protected example: four local breakwater pieces. Switching examples does not move the
+            island or save anything.
+          </p>
+        </div>
+
+        <p class="world-attribution">
+          8th Wall engine by Niantic Spatial, © 2026 Niantic Spatial, Inc. Proprietary
+          <a
+            href="./ar/vendor/8thwall-engine-1.0.0/LICENSE"
+            target="_blank"
+            rel="noreferrer"
+            >XR Engine License Agreement</a
+          >; provided “AS IS”, without warranties; no endorsement. This page stores no camera
+          frames or poses.
+        </p>
+        <p id="unsupported" class="world-message" hidden></p>
+
+        <div id="idle-copy" class="world-idle-copy">
+          <ol>
+            <li>Start on a textured floor with cracks, gravel, grass or a patterned rug. Keep tables and other horizontal surfaces out of view.</li>
+            <li>Press <strong>Start AR</strong>, allow camera and motion access, then move the phone slowly until tracking is normal.</li>
+            <li>Tap the floor to place the island. Sidestep or walk around to check that it stays put.</li>
+          </ol>
+          <p class="world-note">
+            Placement uses 8th Wall's one estimated floor plane (<strong>Y = 0</strong>), not ARKit
+            tabletop detection. A table is exploratory only and may confuse tracking. Your card can
+            stay out of view; this page does not use the illustration. Use Island size to adjust
+            the model without placing it again, or step back if the framing feels tight. The
+            percentage is relative to the default size, not a measurement in metres.
+          </p>
+        </div>
+
+      </main>
+
+      <noscript>
+        <p class="world-noscript">
+          This experiment needs JavaScript. It does not start the camera unless you press Start AR.
+        </p>
+      </noscript>
+    </div>
+    <script type="module" src="/src/world/world.ts"></script>
+  </body>
+</html>

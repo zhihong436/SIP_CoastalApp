@@ -1,0 +1,495 @@
+:root {
+  color-scheme: light;
+  --paper: #f6efd9;
+  --paper-light: #fffaf0;
+  --ink: #173a3f;
+  --muted: #5d6b70;
+  --sea: #0a3c4b;
+  --teal: #147b8b;
+  --coral: #c9443f;
+  --gold: #d7a047;
+  --line: #d8c9ad;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #ded6c8;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.card-page {
+  display: grid;
+  grid-template-columns: minmax(0, 30rem) minmax(0, 148mm);
+  gap: 2rem;
+  align-items: start;
+  justify-content: center;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.card-controls {
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: var(--paper-light);
+  box-shadow: 0 10px 30px rgb(54 40 25 / 12%);
+}
+
+.kicker {
+  margin: 0 0 0.4rem;
+  color: var(--coral);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.card-controls h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.lede {
+  margin: 0.8rem 0 0;
+  color: #345258;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.url-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+.url-form label {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.url-form input,
+.url-form select {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #bfae92;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.url-form input:focus,
+.url-form select:focus {
+  border-color: var(--teal);
+  outline: 3px solid rgb(20 123 139 / 22%);
+  outline-offset: 0;
+}
+
+.url-form__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.button--primary {
+  background: var(--coral);
+  color: #fff8ef;
+}
+
+.button--primary:hover:not(:disabled) {
+  background: #d95a50;
+}
+
+.button--quiet {
+  border-color: #bfae92;
+  background: #fff;
+  color: var(--ink);
+}
+
+.button--quiet:hover:not(:disabled) {
+  background: #f4ecdd;
+}
+
+.button--wide {
+  width: 100%;
+  margin-top: 0.9rem;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.warning,
+.error {
+  margin: 0.8rem 0 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.6rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.warning {
+  border: 1px solid #d9b25e;
+  background: #fff2d4;
+  color: #6d4b08;
+}
+
+.error {
+  border: 1px solid #d99b94;
+  background: #fde9e6;
+  color: #7b211b;
+}
+
+.preview {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: #fff;
+}
+
+.qr-code {
+  flex: none;
+  width: 112px;
+  padding: 0.4rem;
+  border: 1px solid #d7cbb8;
+  border-radius: 0.35rem;
+  background: #fff;
+}
+
+.qr-code svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.preview__copy {
+  min-width: 0;
+}
+
+.preview__label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.preview__url {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.preview__hint {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.instructions {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+  color: #3d575c;
+  font-size: 0.84rem;
+}
+
+.instructions summary {
+  color: var(--ink);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.instructions ol {
+  margin: 0.65rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.instructions li {
+  margin-bottom: 0.45rem;
+}
+
+.instructions code {
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.2rem;
+  background: #efe5d3;
+  font-size: 0.9em;
+}
+
+.back-link {
+  margin: 1rem 0 0;
+  font-size: 0.85rem;
+}
+
+.back-link a {
+  color: var(--teal);
+  font-weight: 650;
+}
+
+/* The printed card is A5. The preview uses the same proportions and lays out in millimetres. */
+.card-sheet {
+  width: 100%;
+  max-width: 148mm;
+  aspect-ratio: 148 / 210;
+  overflow: hidden;
+  border: 1px solid #c9b99d;
+  border-radius: 2mm;
+  background: var(--paper);
+  box-shadow: 0 16px 46px rgb(54 40 25 / 22%);
+  color: var(--ink);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.card-sheet__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 3mm;
+  height: 100%;
+  padding: 7mm;
+}
+
+.card-head {
+  display: grid;
+  gap: 1mm;
+}
+
+.card-kicker {
+  margin: 0;
+  color: var(--coral);
+  font-size: 6.6pt;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.card-head h1 {
+  margin: 0;
+  font-size: 25pt;
+  line-height: 0.96;
+  letter-spacing: -0.035em;
+}
+
+.card-subtitle {
+  margin: 0;
+  color: #426168;
+  font-size: 9pt;
+  line-height: 1.35;
+}
+
+.art-frame {
+  width: 82%;
+  margin: 0 auto;
+  border: 1.1mm solid var(--sea);
+  border-radius: 1.2mm;
+  background: #fff;
+}
+
+.art-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.card-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 31mm;
+  gap: 4mm;
+  align-items: start;
+}
+
+.card-instructions {
+  display: grid;
+  gap: 1.2mm;
+}
+
+.card-step {
+  margin: 0;
+  font-size: 8.2pt;
+  line-height: 1.3;
+}
+
+.card-step strong {
+  color: var(--coral);
+}
+
+.card-disclaimer {
+  margin: 1.2mm 0 0;
+  padding-top: 1.2mm;
+  border-top: 0.3mm solid #cbb890;
+  color: #49646a;
+  font-size: 6.4pt;
+  line-height: 1.3;
+}
+
+.card-qr {
+  padding: 1.5mm;
+  border: 0.45mm solid var(--sea);
+  border-radius: 1mm;
+  background: #fff;
+}
+
+.card-qr__code {
+  width: 100%;
+}
+
+.card-qr__code svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.card-qr__caption {
+  margin: 1mm 0 0;
+  color: var(--sea);
+  font-size: 6.2pt;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card-qr__url {
+  margin: 0.7mm 0 0;
+  overflow-wrap: anywhere;
+  color: #536b70;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 4.6pt;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.card-qr__note {
+  margin: 1mm 0 0;
+  padding-top: 0.8mm;
+  border-top: 0.3mm solid #d99b94;
+  color: #a12820;
+  font-size: 5.2pt;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 2mm;
+  margin-top: auto;
+  padding-top: 1.5mm;
+  border-top: 0.3mm solid #cbb890;
+  color: #6a7d7e;
+  font-size: 5.6pt;
+  line-height: 1.25;
+}
+
+@media (max-width: 980px) {
+  .card-page {
+    grid-template-columns: minmax(0, 32rem);
+    justify-items: center;
+  }
+
+  .card-controls,
+  .card-sheet {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .card-page {
+    padding: 0.75rem;
+  }
+
+  .card-controls {
+    padding: 1rem;
+  }
+
+  .url-form__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .preview {
+    align-items: flex-start;
+  }
+
+  .card-sheet {
+    max-width: 100%;
+  }
+}
+
+@page {
+  size: A5 portrait;
+  margin: 0;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .card-page {
+    display: block;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .card-controls {
+    display: none;
+  }
+
+  .card-sheet {
+    width: 148mm;
+    height: 210mm;
+    max-width: none;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .card-sheet__inner {
+    padding: 7mm;
+  }
+}

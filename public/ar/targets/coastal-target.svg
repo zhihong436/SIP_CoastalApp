@@ -1,0 +1,404 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Coastal field study</title>
+  <desc id="desc">An original illustrated coastal map with a sandy headland, lighthouse, cottages, palms, offshore rocks, a stone breakwater, boats, waves and a compass rose.</desc>
+  <defs>
+    <linearGradient id="sea" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d5365"/>
+      <stop offset="0.55" stop-color="#147b8b"/>
+      <stop offset="1" stop-color="#23a0a5"/>
+    </linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#f0d79b"/>
+      <stop offset="1" stop-color="#d9ae65"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#79b66b"/>
+      <stop offset="1" stop-color="#2f714f"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe28a"/>
+      <stop offset="1" stop-color="#f5a63c"/>
+    </linearGradient>
+    <pattern id="waveLines" width="168" height="104" patternUnits="userSpaceOnUse">
+      <path d="M-20 24 Q18 2 56 24 T132 24 T208 24" fill="none" stroke="#8bd6d2" stroke-width="5" opacity="0.55"/>
+      <path d="M-20 52 Q18 30 56 52 T132 52 T208 52" fill="none" stroke="#eaf9ee" stroke-width="2.5" opacity="0.35"/>
+      <path d="M-20 82 Q18 60 56 82 T132 82 T208 82" fill="none" stroke="#0a4051" stroke-width="4" opacity="0.4"/>
+    </pattern>
+    <pattern id="sandDots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="5" cy="7" r="2.2" fill="#a97739" opacity="0.55"/>
+      <circle cx="19" cy="18" r="1.5" fill="#fff1c9" opacity="0.9"/>
+      <path d="M12 23l4-3" stroke="#b98445" stroke-width="1.5" opacity="0.55"/>
+    </pattern>
+    <pattern id="grassLines" width="22" height="22" patternUnits="userSpaceOnUse">
+      <path d="M4 19l2-7M11 20l1-8M18 19l-1-7" stroke="#1c573f" stroke-width="1.6" opacity="0.45"/>
+    </pattern>
+    <pattern id="cliffHatch" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">
+      <path d="M0 4h18M0 12h18" stroke="#394348" stroke-width="2" opacity="0.4"/>
+    </pattern>
+    <pattern id="scalePattern" width="44" height="28" patternUnits="userSpaceOnUse">
+      <path d="M0 14q11-16 22 0t22 0" fill="none" stroke="#bfe9dc" stroke-width="2" opacity="0.35"/>
+      <path d="M-22 28q11-16 22 0t22 0" fill="none" stroke="#0b4354" stroke-width="1.6" opacity="0.35"/>
+    </pattern>
+    <pattern id="roofTiles" width="26" height="18" patternUnits="userSpaceOnUse">
+      <path d="M0 16h26M8 2v12M21 2v12" stroke="#772a28" stroke-width="2" opacity="0.55"/>
+    </pattern>
+    <pattern id="stone" width="36" height="28" patternUnits="userSpaceOnUse">
+      <path d="M0 26h36M8 0v24M27 0v24" stroke="#303a3e" stroke-width="2" opacity="0.45"/>
+      <path d="M2 5l5-3M16 13l7-4M31 20l4-3" stroke="#d6d2c0" stroke-width="1.8" opacity="0.55"/>
+    </pattern>
+    <filter id="paper" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="11" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0" result="mono"/>
+      <feComponentTransfer in="mono" result="grain">
+        <feFuncA type="table" tableValues="0 0.07"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="grain" mode="multiply"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#082f3c"/>
+  <rect x="22" y="22" width="980" height="980" rx="30" fill="#f6efd9"/>
+  <rect x="40" y="40" width="944" height="944" rx="20" fill="url(#sea)"/>
+  <rect x="40" y="40" width="944" height="944" rx="20" fill="url(#scalePattern)"/>
+
+  <!-- Decorative frame: alternating rope, dashes and shell marks. -->
+  <g fill="none" stroke-linecap="round">
+    <rect x="40" y="40" width="944" height="944" rx="20" stroke="#092d39" stroke-width="12"/>
+    <rect x="55" y="55" width="914" height="914" rx="14" stroke="#f6efd9" stroke-width="4" stroke-dasharray="2 17"/>
+    <rect x="68" y="68" width="888" height="888" rx="10" stroke="#d7a047" stroke-width="5" stroke-dasharray="30 12 6 12"/>
+    <rect x="82" y="82" width="860" height="860" rx="6" stroke="#0a3c4b" stroke-width="7"/>
+  </g>
+
+  <!-- Sea texture and current sweeps. -->
+  <rect x="90" y="90" width="844" height="844" fill="url(#waveLines)"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M110 220 Q210 176 310 218 T510 214 T710 208 T930 224" stroke="#d9f6e9" stroke-width="6" opacity="0.6"/>
+    <path d="M84 342 Q182 300 280 338 T476 336 T676 330 T940 348" stroke="#0b4051" stroke-width="10" opacity="0.4"/>
+    <path d="M96 456 Q192 418 288 454 T480 450 T672 446 T944 462" stroke="#8bd6d2" stroke-width="4" opacity="0.55"/>
+    <path d="M120 552 Q216 520 312 550 T504 548 T696 542 T928 562" stroke="#eaf9ee" stroke-width="3" opacity="0.45"/>
+    <path d="M112 804 Q210 770 308 800 T500 798 T692 792 T940 812" stroke="#d9f6e9" stroke-width="5" opacity="0.45"/>
+    <path d="M96 900 Q204 866 312 896 T520 892 T728 888 T950 906" stroke="#0b4051" stroke-width="9" opacity="0.4"/>
+  </g>
+  <g fill="none" stroke="#bceee0" stroke-width="3" opacity="0.55">
+    <path d="M150 166q28-22 56 0t56 0"/>
+    <path d="M760 188q24-18 48 0t48 0"/>
+    <path d="M820 306q30-22 60 0t60 0"/>
+    <path d="M142 710q26-20 52 0t52 0"/>
+    <path d="M704 944q24-18 48 0t48 0"/>
+  </g>
+  <g fill="#083745" opacity="0.4">
+    <path d="M128 248q18-12 36 0-18 12-36 0z"/>
+    <path d="M870 636q18-12 36 0-18 12-36 0z"/>
+    <path d="M632 300q18-12 36 0-18 12-36 0z"/>
+  </g>
+
+  <!-- Sun, clouds and gulls in the top-left quadrant. -->
+  <g transform="translate(188 186)">
+    <g stroke="#f5b642" stroke-width="10" stroke-linecap="round">
+      <path d="M0-126v-42M0 126v42M-126 0h-42M126 0h42M-89-89l-30-30M89 89l30 30M89-89l30-30M-89 89l-30 30"/>
+      <path d="M-54-114l-14-38M54 114l14 38M114-54l38-14M-114 54l-38 14M114 54l38 14M-54 114l-14 38"/>
+    </g>
+    <circle r="112" fill="#f7c95d" stroke="#0a3c4b" stroke-width="9"/>
+    <circle r="88" fill="url(#sun)" stroke="#0a3c4b" stroke-width="6"/>
+    <circle r="60" fill="#ffe9a0" stroke="#d1762f" stroke-width="4" stroke-dasharray="8 8"/>
+    <path d="M-34-10q34-34 68 0" fill="none" stroke="#a95025" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="-32" cy="-28" r="7" fill="#7b2f1f"/>
+    <circle cx="32" cy="-28" r="7" fill="#7b2f1f"/>
+    <path d="M-24 34q24 18 48 0" fill="none" stroke="#a95025" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <g fill="#f6efd9" stroke="#0a3c4b" stroke-width="6" stroke-linejoin="round">
+    <path d="M322 154q-8-40 32-46 14-42 60-32 34-26 62 6 42-2 42 40 26 8 16 32-8 18-36 18l-160-2q-26-2-16-16z"/>
+    <path d="M742 104q-4-28 24-32 12-30 44-22 24-18 44 4 30-2 30 28 18 6 10 22-6 12-24 12l-116-2q-18-2-12-10z"/>
+  </g>
+  <g fill="none" stroke="#9ad8cf" stroke-width="4" opacity="0.65">
+    <path d="M336 138q18-14 36 0M386 128q18-14 36 0M754 96q14-12 28 0"/>
+  </g>
+  <g fill="none" stroke="#0a2f3b" stroke-width="7" stroke-linecap="round">
+    <path d="M402 226q24-22 48 0M450 226q24-22 48 0"/>
+    <path d="M600 176q18-16 36 0M636 176q18-16 36 0"/>
+    <path d="M848 278q22-20 44 0M890 278q22-20 44 0"/>
+  </g>
+
+  <!-- Offshore rocks and a natural arch in the top-right quadrant. -->
+  <g stroke="#082f3c" stroke-width="8" stroke-linejoin="round">
+    <path d="M770 346l34-52 46 10 28 50-22 44-58 12z" fill="#5d696d"/>
+    <path d="M796 334l22-22 28 18-6 34-32 8z" fill="#a5a79f"/>
+    <path d="M844 350l-16 46 30-8z" fill="#3e494e"/>
+    <path d="M874 456l26-40 40 8 24 42-18 38-50 8z" fill="#6f787a"/>
+    <path d="M898 450l18-18 22 14-4 28-26 4z" fill="#b7b3a4"/>
+    <path d="M704 486l22-34 34 8 16 36-16 30-38 4z" fill="#586468"/>
+    <path d="M920 218l22-32 30 8 16 30-14 28-34 4z" fill="#677174"/>
+    <path d="M718 190l18-26 26 6 10 26-12 22-28 2z" fill="#4b585d"/>
+  </g>
+  <g fill="none" stroke="#d9f6e9" stroke-width="6" stroke-linecap="round">
+    <path d="M750 404q32-18 64 0t64 0"/>
+    <path d="M856 514q30-16 60 0t60 0"/>
+    <path d="M686 536q26-16 52 0t52 0"/>
+    <path d="M700 152q26-14 52 0t52 0"/>
+  </g>
+  <g fill="#f6efd9" opacity="0.9">
+    <circle cx="762" cy="376" r="6"/><circle cx="776" cy="386" r="4"/><circle cx="792" cy="370" r="5"/>
+    <circle cx="876" cy="480" r="5"/><circle cx="890" cy="494" r="3.6"/>
+  </g>
+
+  <!-- Lighthouse headland and cliffs, bottom-left. -->
+  <g stroke="#082f3c" stroke-linejoin="round">
+    <path d="M76 522 Q182 486 286 520 Q372 482 448 526 Q486 570 466 640 Q512 690 500 758 Q486 842 404 892 Q330 940 232 944 Q142 944 84 888 Q30 832 42 742 Q18 650 76 522z" fill="#d5a85f" stroke-width="10"/>
+    <path d="M96 570 Q168 538 246 556 Q326 522 390 556 Q424 596 414 652 Q446 700 432 766 Q420 842 348 878 Q280 912 204 906 Q132 900 96 842 Q58 790 70 716 Q50 640 96 570z" fill="url(#sand)"/>
+    <path d="M122 594 Q186 566 248 582 Q306 556 362 582 Q392 618 382 666 Q420 706 402 756 Q388 812 330 842 Q270 872 208 862 Q150 854 118 810 Q84 764 96 704 Q76 648 122 594z" fill="url(#grass)" stroke-width="8"/>
+    <path d="M122 594 Q186 566 248 582 Q306 556 362 582 Q392 618 382 666 Q420 706 402 756 Q388 812 330 842 Q270 872 208 862 Q150 854 118 810 Q84 764 96 704 Q76 648 122 594z" fill="url(#grassLines)"/>
+  </g>
+  <path d="M78 530 Q164 498 258 528 Q344 496 414 532 Q448 570 432 626 Q466 676 450 736 Q436 812 364 856 Q292 898 214 900 Q140 898 98 848 Q62 796 74 730 Q48 650 78 530z" fill="url(#sandDots)" opacity="0.8"/>
+
+  <!-- Cliff face along the north-east side of the headland. -->
+  <path d="M336 538 Q388 516 442 548 Q464 578 446 626 Q424 662 384 654 Q356 608 336 538z" fill="#56636a" stroke="#082f3c" stroke-width="9"/>
+  <path d="M336 538 Q388 516 442 548 Q464 578 446 626 Q424 662 384 654 Q356 608 336 538z" fill="url(#cliffHatch)"/>
+  <path d="M350 554l30-8 18 26-14 30-28-6zM390 606l34-4 12 28-30 14-22-16z" fill="#8d938f" stroke="#082f3c" stroke-width="4"/>
+  <path d="M120 606q34-22 64-4M106 720q38-20 72-2M128 838q42-22 82-2" fill="none" stroke="#082f3c" stroke-width="5" stroke-dasharray="2 12" stroke-linecap="round"/>
+
+  <!-- Beach and foaming shoreline. -->
+  <path d="M436 640 Q482 690 474 750 Q462 824 392 870 Q326 914 246 920 Q164 920 110 870 Q58 820 56 748" fill="none" stroke="#f7e6b5" stroke-width="30"/>
+  <path d="M446 636 Q496 688 488 752 Q478 830 404 878 Q336 922 248 928 Q162 928 104 876 Q48 824 46 748" fill="none" stroke="#0a3c4b" stroke-width="8"/>
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round">
+    <path d="M64 802q30-22 60 0t60 0t60 0"/>
+    <path d="M52 842q26-18 52 0t52 0t52 0"/>
+    <path d="M210 932q26-16 52 0t52 0"/>
+    <path d="M412 882q22-16 44 0t44 0"/>
+  </g>
+  <g fill="none" stroke="#0b5264" stroke-width="4" stroke-linecap="round" opacity="0.8">
+    <path d="M82 776q28-16 56 0t56 0"/>
+    <path d="M72 816q24-14 48 0t48 0"/>
+    <path d="M238 908q26-14 52 0t52 0"/>
+  </g>
+
+  <!-- Paths and garden rows. -->
+  <path d="M180 844 Q228 780 236 706 Q246 656 298 628" fill="none" stroke="#f0d79b" stroke-width="22" stroke-linecap="round"/>
+  <path d="M180 844 Q228 780 236 706 Q246 656 298 628" fill="none" stroke="#a97739" stroke-width="4" stroke-dasharray="12 10" stroke-linecap="round"/>
+  <path d="M264 824 Q318 792 350 748" fill="none" stroke="#f0d79b" stroke-width="17" stroke-linecap="round"/>
+  <g stroke="#1d543d" stroke-width="5" stroke-linecap="round">
+    <path d="M136 760h78M136 780h78M136 800h78M136 820h78"/>
+    <path d="M144 750v80M164 750v80M184 750v80M204 750v80"/>
+  </g>
+  <g fill="#e85d3f" stroke="#082f3c" stroke-width="3">
+    <circle cx="146" cy="758" r="6"/><circle cx="170" cy="778" r="6"/><circle cx="194" cy="758" r="6"/>
+    <circle cx="154" cy="798" r="6"/><circle cx="190" cy="814" r="6"/>
+  </g>
+
+  <!-- Lighthouse on the point. -->
+  <g transform="translate(358 526)">
+    <path d="M-34 78l14-118 40 0 14 118z" fill="#f5ead0" stroke="#082f3c" stroke-width="8"/>
+    <path d="M-26 18l52 0 4 32-60 0z" fill="#cb433c" stroke="#082f3c" stroke-width="5"/>
+    <path d="M-20-28l40 0 4 28-48 0z" fill="#cb433c" stroke="#082f3c" stroke-width="5"/>
+    <path d="M-40-40l80 0 0 12-80 0z" fill="#0a3c4b" stroke="#082f3c" stroke-width="5"/>
+    <path d="M-24-40l0-34 48 0 0 34z" fill="#f7d873" stroke="#082f3c" stroke-width="6"/>
+    <path d="M-14-74l28 0 10 34-48 0z" fill="#cb433c" stroke="#082f3c" stroke-width="5"/>
+    <path d="M0-74l0-18" stroke="#082f3c" stroke-width="6"/>
+    <circle cx="0" cy="-56" r="15" fill="#5fd0cb" stroke="#082f3c" stroke-width="5"/>
+    <path d="M-64-56h40M24-56h40M-44-92l-28-24M44-92l28-24" stroke="#f7d873" stroke-width="7" stroke-linecap="round"/>
+    <path d="M-34 78h68" stroke="#082f3c" stroke-width="8"/>
+    <path d="M-20 54h40M-24 78h48" stroke="#9a7a4c" stroke-width="4"/>
+  </g>
+
+  <!-- Cottages with tiled and thatched roofs. -->
+  <g transform="translate(218 662)">
+    <rect x="-42" y="0" width="84" height="62" fill="#f3dfb4" stroke="#082f3c" stroke-width="7"/>
+    <path d="M-52 2l52-44 52 44z" fill="#c44938" stroke="#082f3c" stroke-width="7"/>
+    <path d="M-52 2l52-44 52 44z" fill="url(#roofTiles)"/>
+    <rect x="-22" y="22" width="20" height="22" fill="#68bfc0" stroke="#082f3c" stroke-width="4"/>
+    <rect x="12" y="22" width="20" height="22" fill="#68bfc0" stroke="#082f3c" stroke-width="4"/>
+    <path d="M-22 33h20M2 33h20M-22 22v22M12 22v22" stroke="#082f3c" stroke-width="3"/>
+    <rect x="-6" y="44" width="18" height="18" fill="#8a4f2c" stroke="#082f3c" stroke-width="4"/>
+    <path d="M30-34v-26h12v38" fill="#8a4f2c" stroke="#082f3c" stroke-width="4"/>
+    <circle cx="36" cy="-52" r="5" fill="#e7d6b6"/>
+  </g>
+  <g transform="translate(292 728)">
+    <rect x="-34" y="0" width="68" height="54" fill="#f7e8c5" stroke="#082f3c" stroke-width="7"/>
+    <path d="M-44 2l44-36 44 36z" fill="#d6a04a" stroke="#082f3c" stroke-width="7"/>
+    <path d="M-44 2l44-36 44 36z" fill="none" stroke="#8c5c26" stroke-width="3" stroke-dasharray="4 5"/>
+    <rect x="-18" y="20" width="16" height="18" fill="#68bfc0" stroke="#082f3c" stroke-width="4"/>
+    <rect x="8" y="20" width="16" height="18" fill="#68bfc0" stroke="#082f3c" stroke-width="4"/>
+    <rect x="-7" y="38" width="14" height="16" fill="#8a4f2c" stroke="#082f3c" stroke-width="4"/>
+  </g>
+  <g transform="translate(316 626) rotate(-8)">
+    <rect x="-26" y="0" width="52" height="44" fill="#f3dfb4" stroke="#082f3c" stroke-width="6"/>
+    <path d="M-34 1l34-30 34 30z" fill="#3a7f77" stroke="#082f3c" stroke-width="6"/>
+    <rect x="-12" y="16" width="12" height="14" fill="#f7d873" stroke="#082f3c" stroke-width="3"/>
+    <rect x="6" y="16" width="12" height="14" fill="#f7d873" stroke="#082f3c" stroke-width="3"/>
+  </g>
+
+  <!-- Palms and shrubs. -->
+  <g stroke="#082f3c" stroke-linejoin="round">
+    <path d="M152 704q-10-44 8-80" fill="none" stroke="#7b4b2b" stroke-width="13"/>
+    <path d="M160 624q-38-30-62 2q36 6 62 18M160 624q34-36 66-10q-36 10-66 30M160 624q4-48 44-44q-22 30-44 44M160 624q-30-34-54-8q28 14 54 8M160 624q34 12 34 42q-30-12-34-42" fill="#2f714f" stroke-width="6"/>
+    <path d="M118 714q-6-38 6-68" fill="none" stroke="#7b4b2b" stroke-width="10"/>
+    <path d="M124 646q-30-24-50 2q28 4 50 12M124 646q28-28 52-6q-28 8-52 20M124 646q4-38 34-34q-16 22-34 34" fill="#4f9462" stroke-width="5"/>
+    <path d="M262 876q-4-50 14-88" fill="none" stroke="#7b4b2b" stroke-width="14"/>
+    <path d="M276 788q-42-30-68 6q40 4 68 18M276 788q38-38 74-8q-40 10-74 32M276 788q8-52 50-46q-24 32-50 46M276 788q-34-34-60-4q32 14 60 4" fill="#2f714f" stroke-width="7"/>
+  </g>
+  <g fill="#4f9462" stroke="#082f3c" stroke-width="5">
+    <circle cx="206" cy="704" r="24"/>
+    <circle cx="238" cy="696" r="18"/>
+    <circle cx="180" cy="736" r="16"/>
+    <circle cx="372" cy="822" r="22"/>
+    <circle cx="400" cy="806" r="15"/>
+    <circle cx="344" cy="850" r="14"/>
+  </g>
+  <g fill="#e85d3f" stroke="#082f3c" stroke-width="2">
+    <circle cx="200" cy="694" r="4"/><circle cx="218" cy="712" r="4"/><circle cx="230" cy="688" r="3"/>
+    <circle cx="368" cy="814" r="4"/><circle cx="382" cy="830" r="3"/>
+  </g>
+
+  <!-- Jetty with posts and a rowing boat. -->
+  <g>
+    <path d="M408 806l116 52" stroke="#6c4429" stroke-width="18" stroke-linecap="round"/>
+    <path d="M420 796l112 50" stroke="#d8a861" stroke-width="8" stroke-linecap="round"/>
+    <g fill="#6c4429" stroke="#082f3c" stroke-width="4">
+      <circle cx="430" cy="820" r="6"/><circle cx="456" cy="832" r="6"/><circle cx="482" cy="842" r="6"/><circle cx="508" cy="854" r="6"/>
+    </g>
+    <path d="M448 878q42-14 84 0l-12 30q-30 12-60 0z" fill="#e85d3f" stroke="#082f3c" stroke-width="6"/>
+    <path d="M460 886q30-8 60 0" fill="none" stroke="#f6efd9" stroke-width="4"/>
+    <path d="M492 878v34" stroke="#082f3c" stroke-width="4"/>
+  </g>
+
+  <!-- Breakwater and harbour: a built line of stone blocks, with three placement rings. -->
+  <g>
+    <path d="M584 642 Q690 680 760 760 Q818 826 840 914" fill="none" stroke="#082f3c" stroke-width="58" stroke-linecap="round"/>
+    <path d="M584 642 Q690 680 760 760 Q818 826 840 914" fill="none" stroke="#77807e" stroke-width="46" stroke-linecap="round"/>
+    <path d="M584 642 Q690 680 760 760 Q818 826 840 914" fill="none" stroke="url(#stone)" stroke-width="42" stroke-linecap="round"/>
+    <path d="M584 642 Q690 680 760 760 Q818 826 840 914" fill="none" stroke="#c9c5b5" stroke-width="3" stroke-dasharray="16 14" stroke-linecap="round"/>
+    <g fill="#49555a" stroke="#082f3c" stroke-width="3">
+      <rect x="570" y="616" width="34" height="24" rx="4" transform="rotate(12 587 628)"/>
+      <rect x="614" y="628" width="38" height="24" rx="4" transform="rotate(18 633 640)"/>
+      <rect x="660" y="650" width="36" height="24" rx="4" transform="rotate(24 678 662)"/>
+      <rect x="704" y="682" width="38" height="24" rx="4" transform="rotate(30 723 694)"/>
+      <rect x="744" y="720" width="36" height="24" rx="4" transform="rotate(36 762 732)"/>
+      <rect x="778" y="764" width="38" height="24" rx="4" transform="rotate(42 797 776)"/>
+      <rect x="800" y="812" width="36" height="24" rx="4" transform="rotate(48 818 824)"/>
+      <rect x="812" y="862" width="38" height="24" rx="4" transform="rotate(54 831 874)"/>
+    </g>
+    <g fill="none" stroke="#f6efd9" stroke-width="5" stroke-linecap="round">
+      <path d="M566 604q28-14 56 0t56 0"/>
+      <path d="M606 630q26-12 52 0t52 0"/>
+      <path d="M750 730q26-12 52 0t52 0"/>
+      <path d="M816 888q22-12 44 0t44 0"/>
+    </g>
+    <g fill="#f7d873" stroke="#082f3c" stroke-width="5">
+      <circle cx="606" cy="654" r="19"/>
+      <circle cx="744" cy="772" r="19"/>
+      <circle cx="826" cy="892" r="19"/>
+    </g>
+    <g fill="#0a3c4b">
+      <circle cx="606" cy="654" r="6"/><circle cx="744" cy="772" r="6"/><circle cx="826" cy="892" r="6"/>
+    </g>
+    <g fill="none" stroke="#082f3c" stroke-width="4" stroke-dasharray="4 8">
+      <circle cx="606" cy="654" r="30"/><circle cx="744" cy="772" r="30"/><circle cx="826" cy="892" r="30"/>
+    </g>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.9">
+    <path d="M540 690q24-14 48 0t48 0"/>
+    <path d="M530 760q22-12 44 0t44 0"/>
+    <path d="M560 836q22-12 44 0t44 0"/>
+    <path d="M694 860q22-12 44 0t44 0"/>
+  </g>
+  <g fill="none" stroke="#bfe9dc" stroke-width="4" stroke-linecap="round" opacity="0.85">
+    <path d="M612 712q20-10 40 0t40 0"/>
+    <path d="M660 796q18-10 36 0t36 0"/>
+    <path d="M732 850q18-10 36 0t36 0"/>
+  </g>
+  <g fill="none" stroke="#0b4051" stroke-width="6" stroke-linecap="round" opacity="0.5">
+    <path d="M548 648q20-12 40 0t40 0"/>
+    <path d="M846 792q18-10 36 0t36 0"/>
+    <path d="M866 846q18-10 36 0t36 0"/>
+  </g>
+
+  <!-- Boats and buoys. -->
+  <g transform="translate(796 392) rotate(8)">
+    <path d="M-58 20q58 22 116 0l-18 34q-40 14-80 0z" fill="#f0d79b" stroke="#082f3c" stroke-width="6"/>
+    <path d="M0 18v-92" stroke="#082f3c" stroke-width="7"/>
+    <path d="M4-76l58 60-58 12z" fill="#f6efd9" stroke="#082f3c" stroke-width="6"/>
+    <path d="M-4-62l-44 46 44 8z" fill="#e85d3f" stroke="#082f3c" stroke-width="6"/>
+    <path d="M-58 54q58 18 116 0" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="-38" cy="34" r="4" fill="#0a3c4b"/><circle cx="40" cy="34" r="4" fill="#0a3c4b"/>
+  </g>
+  <g transform="translate(548 330) rotate(-6)">
+    <path d="M-42 12q42 16 84 0l-12 24q-30 10-60 0z" fill="#cb433c" stroke="#082f3c" stroke-width="5"/>
+    <path d="M-8 10v-46" stroke="#082f3c" stroke-width="5"/>
+    <path d="M-5-30l34 34-34 6z" fill="#f7d873" stroke="#082f3c" stroke-width="4"/>
+    <path d="M-42 38q42 12 84 0" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(698 902)">
+    <circle r="17" fill="#e85d3f" stroke="#082f3c" stroke-width="5"/>
+    <path d="M0-17v34M-17 0h34" stroke="#f6efd9" stroke-width="4"/>
+    <path d="M0 17v14" stroke="#082f3c" stroke-width="4"/>
+  </g>
+  <g transform="translate(474 394)">
+    <path d="M-30 8q30 12 60 0l-8 18q-22 8-44 0z" fill="#f6efd9" stroke="#082f3c" stroke-width="4"/>
+    <path d="M0 6v-28" stroke="#082f3c" stroke-width="4"/>
+    <path d="M2-20l22 22-22 4z" fill="#5fd0cb" stroke="#082f3c" stroke-width="3"/>
+    <path d="M-30 28q30 8 60 0" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- Fish, shells and rock-pool creatures. -->
+  <g transform="translate(594 552) rotate(-18)" stroke="#082f3c" stroke-width="4">
+    <path d="M-26 0q14-20 34-8q20 12 30 8q-10 20-30 8q-20 12-34-8z" fill="#f7d873"/>
+    <circle cx="-12" cy="-2" r="3" fill="#082f3c" stroke="none"/>
+    <path d="M-26 0l-14-12v24z" fill="#e85d3f"/>
+  </g>
+  <g transform="translate(664 472) rotate(12)" stroke="#082f3c" stroke-width="4">
+    <path d="M-20 0q10-16 26-6q16 10 24 6q-8 16-24 6q-16 10-26-6z" fill="#9ad8cf"/>
+    <circle cx="-9" cy="-2" r="2.4" fill="#082f3c" stroke="none"/>
+    <path d="M-20 0l-12-10v20z" fill="#f7d873"/>
+  </g>
+  <g transform="translate(848 664)">
+    <path d="M0 28q-28-16-28-38q0-22 28-22q28 0 28 22q0 22-28 38z" fill="#f7d873" stroke="#082f3c" stroke-width="5"/>
+    <path d="M-18-14l18 34 18-34M0-18v36" fill="none" stroke="#b48134" stroke-width="3"/>
+  </g>
+  <g transform="translate(656 914) rotate(-12)">
+    <path d="M0-24l7 16 17 1-13 12 4 18-15-10-15 10 4-18-13-12 17-1z" fill="#e85d3f" stroke="#082f3c" stroke-width="5"/>
+    <circle cx="0" cy="-2" r="4" fill="#f7d873" stroke="#082f3c" stroke-width="2"/>
+  </g>
+  <g transform="translate(880 960) rotate(14)">
+    <path d="M0 24q-30-16-30-38q0-20 30-20q30 0 30 20q0 22-30 38z" fill="#9ad8cf" stroke="#082f3c" stroke-width="5"/>
+    <path d="M-20-14l20 34 20-34M0-18v36" fill="none" stroke="#0b5264" stroke-width="3"/>
+  </g>
+  <g fill="#2f714f" stroke="#082f3c" stroke-width="4" stroke-linecap="round">
+    <path d="M924 812q-14 30-6 60M924 812q14 24 10 54M924 812q-2 30-24 48" fill="none"/>
+    <path d="M684 884q-10 22-4 44M684 884q10 18 8 40" fill="none"/>
+  </g>
+
+  <!-- Compass rose, bottom-right. -->
+  <g transform="translate(848 832)">
+    <circle r="82" fill="#0a3c4b" stroke="#082f3c" stroke-width="8"/>
+    <circle r="66" fill="#f6efd9" stroke="#d7a047" stroke-width="5" stroke-dasharray="10 7"/>
+    <circle r="50" fill="#147b8b" stroke="#082f3c" stroke-width="5"/>
+    <path d="M0-58l14 44 44 14-44 14-14 44-14-44-44-14 44-14z" fill="#f7d873" stroke="#082f3c" stroke-width="5"/>
+    <path d="M0-58v116M-58 0h116" stroke="#082f3c" stroke-width="3" opacity="0.6"/>
+    <path d="M0-30l10 20 20 10-20 10-10 20-10-20-20-10 20-10z" fill="#e85d3f" stroke="#082f3c" stroke-width="4"/>
+    <g fill="#f6efd9" stroke="#082f3c" stroke-width="3" font-family="Georgia, serif" font-size="25" font-weight="700" text-anchor="middle">
+      <text x="0" y="-58">N</text>
+      <text x="0" y="78">S</text>
+      <text x="74" y="9">E</text>
+      <text x="-74" y="9">W</text>
+    </g>
+  </g>
+
+  <!-- Scattered field notes: dots, crosses, shore marks. -->
+  <g fill="#f6efd9" opacity="0.9">
+    <circle cx="106" cy="150" r="5"/><circle cx="122" cy="166" r="3"/><circle cx="96" cy="180" r="4"/>
+    <circle cx="898" cy="166" r="4"/><circle cx="914" cy="150" r="3"/><circle cx="884" cy="142" r="2.5"/>
+    <circle cx="910" cy="576" r="4"/><circle cx="928" cy="592" r="2.5"/>
+    <circle cx="110" cy="964" r="3"/><circle cx="128" cy="952" r="4"/>
+  </g>
+  <g stroke="#f6efd9" stroke-width="3" stroke-linecap="round" opacity="0.8">
+    <path d="M104 210l12 12M116 210l-12 12"/>
+    <path d="M924 472l12 12M936 472l-12 12"/>
+    <path d="M760 966l10 10M770 966l-10 10"/>
+  </g>
+  <g fill="none" stroke="#f7d873" stroke-width="4" stroke-linecap="round" opacity="0.9">
+    <path d="M488 260q18-16 36 0M494 274q12-10 24 0"/>
+    <path d="M726 576q16-14 32 0M732 588q10-8 20 0"/>
+  </g>
+
+  <!-- Fine paper grain keeps the printed card from looking like flat clip art. -->
+  <rect x="40" y="40" width="944" height="944" rx="20" fill="#f6efd9" opacity="0.02" filter="url(#paper)"/>
+</svg>

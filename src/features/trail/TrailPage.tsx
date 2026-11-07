@@ -4,6 +4,7 @@ import { BackIcon } from '../../components/Icons'
 import { useAuth } from '../auth/AuthProvider'
 import { useMatch } from '../chat/useMatch'
 import { BoardPage } from './BoardPage'
+import { BreakWavesPage } from './BreakWavesPage'
 import { InterpreterStop } from './InterpreterStop'
 import { InvestigatorStop } from './InvestigatorStop'
 import { StopIntro, roleNames, type Role } from './StopIntro'
@@ -11,6 +12,13 @@ import { useTrailSession, type StopProgress, type TrailSession } from './useTrai
 
 export function TrailPage() {
   const { sessionId = '' } = useParams()
+  // The key makes a session-ID route change a real unmount. Otherwise the previous trail page,
+  // its loads, local action closures, delayed mutation refreshes and AR controller could survive
+  // into the next session.
+  return <TrailSessionPage key={sessionId} sessionId={sessionId} />
+}
+
+function TrailSessionPage({ sessionId }: { sessionId: string }) {
   const { state, reload } = useTrailSession(sessionId)
 
   if (state.status === 'loading') return <p className="screen muted">Loading…</p>
@@ -36,6 +44,17 @@ export function TrailPage() {
   // A trail that has not started belongs in the lobby.
   if (state.session.status === 'lobby') {
     return <Navigate to={`/chats/${state.session.match_id}/trail`} replace />
+  }
+  if (state.session.game_version === 'hunt-v1') {
+    return <BreakWavesPage sessionId={state.session.id} matchId={state.session.match_id} />
+  }
+  if ((state.session.game_version as string) !== 'legacy') {
+    return (
+      <main className="screen screen--centered">
+        <p>This trail uses a version this build does not support.</p>
+        <Link to="/chats">Back to Chats</Link>
+      </main>
+    )
   }
   const progress = state.stops.find((stop) => stop.stop === state.session.current_stop)
   if (!progress) return <BoardPage session={state.session} stops={state.stops} onChanged={reload} />
