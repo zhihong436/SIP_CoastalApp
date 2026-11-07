@@ -128,6 +128,20 @@ the import map those vendor modules need. No CDN or new engine is used.
   coastal takeaway. Both players press Continue to unlock the clue.
 - The clue screen names Higher ground and says clearly that stop 2 is not built yet.
 
+### Tracking-stability experiment
+
+The paired hunt temporarily sets MindAR's `filterBeta` to `10` instead of the pinned default
+`1000`. The minimum cutoff (`0.001`) and warmup/miss tolerances (5 tracking updates each) remain
+unchanged. This tunes the existing pose filter only; it does not freeze the miniature, change the
+camera or keep construction enabled after tracking loss. The standalone experiment is unchanged.
+
+This is a phone-test experiment, not a proven jitter fix. Lower adaptive responsiveness can add lag
+while moving the phone. Compare gentle stationary holding, slow sideways motion and return to rest
+at the same marker/distance, then briefly hide and reacquire the marker. Check both jitter and lag,
+that tracking loss still disables construction and that saved pieces recover. Do not infer success
+from synthetic filter output. The Oblique orientation and close-view clipping issues remain separate.
+Revert by removing the explicit `filterBeta` option, restoring the pinned library default.
+
 ## Migration and legacy limitations
 
 - The migration was verified in an isolated, disposable local PostgreSQL 17.11 container

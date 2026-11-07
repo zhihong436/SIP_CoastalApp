@@ -135,6 +135,9 @@ export class BreakWavesAr {
           container: this.options.container,
           imageTargetSrc: targetUrl,
           maxTrack: 1,
+          // Phone-test experiment: reduce adaptive responsiveness to smooth pose jitter.
+          // Keep MindAR's cutoff and detection tolerances unchanged; lower beta can add lag.
+          filterBeta: 10,
           uiLoading: 'no',
           uiScanning: 'no',
           uiError: 'no',
