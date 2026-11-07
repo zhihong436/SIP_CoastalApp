@@ -122,6 +122,8 @@ export function DiscoverPage() {
               <div
                 key={underneath.user_id}
                 className="deck__card"
+                aria-hidden="true"
+                inert
                 style={{
                   transform: departing ? 'none' : 'scale(0.95) translateY(12px)',
                   transition,
@@ -143,24 +145,34 @@ export function DiscoverPage() {
               {decisionError}
             </p>
           )}
-          <div className="round-actions">
+          <div className="card-actions">
             <button
               type="button"
-              className="round-button round-button--pass"
-              aria-label="Pass"
+              className="decision-button decision-button--pass"
               disabled={busy}
+              aria-busy={pending && departing?.direction === 'pass' ? true : undefined}
               onClick={() => startDecision('pass')}
             >
-              <CrossIcon />
+              {pending && departing?.direction === 'pass' ? (
+                <span className="spinner spinner--button" aria-hidden="true" />
+              ) : (
+                <CrossIcon size={22} />
+              )}
+              <span>{pending && departing?.direction === 'pass' ? 'Passing…' : 'Pass'}</span>
             </button>
             <button
               type="button"
-              className="round-button round-button--like"
-              aria-label="Like"
+              className="decision-button decision-button--like"
               disabled={busy}
+              aria-busy={pending && departing?.direction === 'like' ? true : undefined}
               onClick={() => startDecision('like')}
             >
-              <HeartIcon />
+              {pending && departing?.direction === 'like' ? (
+                <span className="spinner spinner--button" aria-hidden="true" />
+              ) : (
+                <HeartIcon size={22} />
+              )}
+              <span>{pending && departing?.direction === 'like' ? 'Connecting…' : 'Connect'}</span>
             </button>
           </div>
         </>

@@ -323,8 +323,7 @@ a {
   transition: transform 120ms ease;
 }
 
-.button:active:not(:disabled),
-.round-button:active:not(:disabled) {
+.button:active:not(:disabled) {
   transform: scale(0.94);
 }
 
@@ -681,8 +680,8 @@ a {
 
 .deck {
   position: relative;
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 auto;
+  min-height: 22rem;
   margin: 0 var(--page-gutter);
 }
 
@@ -695,103 +694,257 @@ a {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--color-surface);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+  scrollbar-color: var(--color-border) transparent;
+  scrollbar-width: thin;
 }
 
-/* Stands in for a photo, which the app does not have. */
+/* The scene fills whatever height the identity base leaves. */
 .card__hero {
   position: relative;
   display: flex;
-  flex: 0 0 58%;
-  align-items: center;
-  justify-content: center;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 7rem;
+  overflow: hidden;
+  background: var(--color-mist);
 }
 
-.card__initials {
-  color: rgb(255 255 255 / 92%);
-  font-size: 7rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+/* The scene keeps its own box, so it stays centred above however tall the name grows. */
+.card__hero-art {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.card__hero-art svg,
+.card__photo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.card__photo {
+  object-fit: cover;
+  object-position: center;
+}
+
+/* A quiet tonal foot helps the art settle into the navy identity base. */
+.card__hero-art::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 22%;
+  background: linear-gradient(to top, rgb(20 42 53 / 32%), transparent);
+  content: '';
+  pointer-events: none;
 }
 
 .card__identity {
-  position: absolute;
-  right: 1.25rem;
-  bottom: 1.125rem;
-  left: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
+  position: relative;
+  z-index: 1;
+  flex: none;
+  margin-top: -1.25rem;
+  padding: 0.9rem 1.2rem 0.95rem;
+  border-radius: var(--radius-block) var(--radius-block) 0 0;
+  background: var(--color-navy);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%);
 }
 
 .card__name {
   margin: 0;
   color: #fff;
-  font-size: 2rem;
+  font-size: clamp(1.625rem, 8vw, 2.125rem);
   font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  letter-spacing: -0.025em;
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
-.card__body {
-  flex: 1;
+.card__age {
+  color: #f3ddc5;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.card__gender {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid rgb(255 255 255 / 30%);
+  border-radius: var(--radius-pill);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  vertical-align: 0.12em;
+}
+
+/* About hugs its copy, and only takes a larger share when a long bio needs the room. */
+.card__details {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  gap: 0.4rem;
   min-height: 0;
-  padding: 1.125rem 1.25rem 1.25rem;
+  max-height: 36%;
+  padding: 0.95rem 1.35rem 1.1rem;
+  background: var(--color-surface);
+  box-shadow: inset 0 1px 0 var(--color-divider);
+}
+
+.card__label {
+  margin: 0;
+  color: var(--color-coastal);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+}
+
+.card__bio-frame {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Fades the last line only while more copy remains below, so a cut-off line never looks final. */
+.card__bio-frame--more::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 1.35rem;
+  background: linear-gradient(to top, var(--color-surface), transparent);
+  content: '';
+  pointer-events: none;
+}
+
+.card__bio-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--color-ocean-line) transparent;
+  scrollbar-width: thin;
+}
+
+.card__bio-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.card__bio-scroll::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--color-ocean-line);
+}
+
+.card__bio-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.card__bio-scroll:focus-visible {
+  border-radius: 0.25rem;
+  outline: 3px solid var(--color-coastal);
+  outline-offset: 2px;
 }
 
 .card__bio {
   margin: 0;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
-.round-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  padding: var(--space-3) 0 1.125rem;
+.card-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) var(--page-gutter);
 }
 
-.round-button {
-  display: flex;
+.decision-button {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  border-radius: 50%;
+  gap: var(--space-2);
+  min-height: 3.25rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
   cursor: pointer;
-  transition: transform 120ms ease;
+  transition:
+    background-color var(--duration-feedback) var(--ease-feedback),
+    border-color var(--duration-feedback) var(--ease-feedback),
+    box-shadow var(--duration-feedback) var(--ease-feedback),
+    transform 120ms ease;
 }
 
-.round-button:disabled {
-  opacity: 0.5;
-  cursor: default;
+.decision-button span:last-child {
+  overflow-wrap: anywhere;
 }
 
-.round-button--pass {
-  width: 3.75rem;
-  height: 3.75rem;
-  border: 1px solid var(--color-border);
+.decision-button--pass {
+  border: 1.5px solid var(--color-border-strong);
   background: var(--color-surface);
-  color: var(--color-text-strong);
+  color: var(--color-text);
   box-shadow: var(--shadow-button);
 }
 
-.round-button--like {
-  width: 4.5rem;
-  height: 4.5rem;
-  border: none;
+.decision-button--like {
+  border: 1.5px solid transparent;
   background: var(--color-accent);
   color: #fff;
   box-shadow: 0 6px 18px var(--color-accent-shadow);
 }
 
-.round-button:focus-visible {
-  outline: 3px solid var(--color-accent-focus);
+@media (hover: hover) {
+  .decision-button--pass:hover:not(:disabled) {
+    border-color: var(--color-coastal);
+    background: var(--color-mist);
+  }
+
+  .decision-button--like:hover:not(:disabled) {
+    background: var(--color-accent-strong);
+  }
+}
+
+.decision-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.decision-button--pass:active:not(:disabled) {
+  border-color: var(--color-coastal);
+  background: var(--color-mist);
+}
+
+.decision-button--like:active:not(:disabled) {
+  background: var(--color-accent-pressed);
+}
+
+.decision-button:focus-visible {
+  outline: 3px solid var(--color-accent-strong);
   outline-offset: 2px;
+}
+
+.decision-button:disabled {
+  opacity: 0.58;
+  cursor: wait;
+}
+
+.spinner--button {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .actions {
@@ -2061,7 +2214,7 @@ h1 {
 /* Keep these last so they can quiet component transitions defined above. */
 @media (prefers-reduced-motion: reduce) {
   .button,
-  .round-button,
+  .decision-button,
   .send-button,
   .focus.conversation .send-button,
   .tabs__link,
