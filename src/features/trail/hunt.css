@@ -316,12 +316,14 @@
 /* The build sheet is a bounded snap sheet. Its handle stays outside the scrolling body so a
    scrolled control list cannot move the drag target away from the top edge. */
 .hunt-sheet.hunt-sheet--build {
-  --hunt-sheet-default-height: 43dvh;
-  --hunt-sheet-collapsed-height: 28dvh;
+  --hunt-sheet-handle-height: max(44px, 2.75rem);
+  --hunt-sheet-safe-bottom: env(safe-area-inset-bottom);
+  --hunt-sheet-current-height: 43dvh;
+  --hunt-sheet-collapsed-height: calc(var(--hunt-sheet-handle-height) + var(--hunt-sheet-safe-bottom));
   --hunt-sheet-expanded-height: 82dvh;
   display: flex;
   flex-direction: column;
-  height: var(--hunt-sheet-default-height);
+  height: var(--hunt-sheet-current-height);
   max-height: none;
   padding: 0;
   overflow: hidden;
@@ -336,13 +338,45 @@
   height: var(--hunt-sheet-expanded-height);
 }
 
+.hunt-sheet.hunt-sheet--build[data-dragging='true'] {
+  transition: none;
+}
+
+.hunt-sheet__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.hunt-sheet__measure > span {
+  display: block;
+  width: 0;
+}
+
+.hunt-sheet__measure [data-sheet-measure='collapsed'] {
+  height: var(--hunt-sheet-collapsed-height);
+}
+
+.hunt-sheet__measure [data-sheet-measure='current'] {
+  height: var(--hunt-sheet-current-height);
+}
+
+.hunt-sheet__measure [data-sheet-measure='expanded'] {
+  height: var(--hunt-sheet-expanded-height);
+}
+
 .hunt-sheet__handle {
   display: flex;
   flex: none;
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: max(44px, 2.75rem);
+  min-height: var(--hunt-sheet-handle-height);
   margin: 0;
   padding: 0;
   border: 0;
@@ -374,10 +408,14 @@
 .hunt-sheet__body {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0 1rem calc(0.9rem + env(safe-area-inset-bottom));
+  padding: 0 1rem calc(0.9rem + var(--hunt-sheet-safe-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+.hunt-sheet.hunt-sheet--build[data-snap='collapsed']:not([data-dragging='true']) .hunt-sheet__body {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1218,18 +1256,11 @@
   }
 
   .hunt-sheet.hunt-sheet--build {
+    --hunt-sheet-current-height: calc(100dvh - 8rem - env(safe-area-inset-top));
+    --hunt-sheet-expanded-height: calc(100dvh - 4.25rem - env(safe-area-inset-top));
     top: auto;
     bottom: 0;
-    height: calc(100dvh - 8rem - env(safe-area-inset-top));
     max-height: none;
-  }
-
-  .hunt-sheet.hunt-sheet--build[data-snap='collapsed'] {
-    height: 46dvh;
-  }
-
-  .hunt-sheet.hunt-sheet--build[data-snap='expanded'] {
-    height: calc(100dvh - 4.25rem - env(safe-area-inset-top));
   }
 
   .hunt-sheet--build .hunt-sheet__handle {
@@ -1237,7 +1268,7 @@
   }
 
   .hunt-sheet--build .hunt-sheet__body {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: var(--hunt-sheet-safe-bottom);
   }
 
   .hunt-result__actions {

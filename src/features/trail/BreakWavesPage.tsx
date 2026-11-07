@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -41,18 +42,44 @@ type SheetSnap = 'collapsed' | 'current' | 'expanded'
 
 const SHEET_SNAPS: readonly SheetSnap[] = ['collapsed', 'current', 'expanded']
 const SHEET_DRAG_TAP_LIMIT = 6
-const SHEET_DRAG_SNAP_DISTANCE = 28
+
+interface SheetBounds {
+  collapsed: number
+  current: number
+  expanded: number
+}
 
 interface SheetDrag {
   pointerId: number
+  captureTarget: HTMLButtonElement
+  captureLoss: AbortController
   startY: number
-  startSnap: SheetSnap
+  startHeight: number
+  lastHeight: number
+  bounds: SheetBounds
   moved: boolean
 }
 
 function moveSheetSnap(snap: SheetSnap, direction: 1 | -1): SheetSnap {
   const index = SHEET_SNAPS.indexOf(snap)
   return SHEET_SNAPS[Math.min(SHEET_SNAPS.length - 1, Math.max(0, index + direction))]
+}
+
+function clampSheetHeight(height: number, bounds: SheetBounds) {
+  return Math.min(bounds.expanded, Math.max(bounds.collapsed, height))
+}
+
+function nearestSheetSnap(height: number, bounds: SheetBounds): SheetSnap {
+  let nearest: SheetSnap = 'current'
+  let nearestDistance = Number.POSITIVE_INFINITY
+  for (const snap of SHEET_SNAPS) {
+    const distance = Math.abs(bounds[snap] - height)
+    if (distance < nearestDistance) {
+      nearest = snap
+      nearestDistance = distance
+    }
+  }
+  return nearest
 }
 
 interface RpcRow {
@@ -317,6 +344,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   const [dismissedTest, setDismissedTest] = useState<number | null>(null)
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>('current')
   const [sheetDragging, setSheetDragging] = useState(false)
+  const sheetBodyUnavailable = sheetSnap === 'collapsed' && !sheetDragging
   const scanReceipt = hasBreakWavesScanReceipt(location.state, sessionId)
   const localEntryMode = entry?.sessionId === sessionId ? entry.mode : null
   const entryMode = localEntryMode ?? (scanReceipt ? 'scan' : null)
@@ -328,6 +356,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   const mutating = useRef(false)
   const scannerRun = useRef(0)
   const entryTestRunning = useRef(false)
+  const sheetRef = useRef<HTMLElement>(null)
   const sheetDrag = useRef<SheetDrag | null>(null)
   const suppressSheetClick = useRef(false)
   const sheetKeyboardInput = useRef(false)
@@ -421,7 +450,11 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
 
   useEffect(() => {
     if (arPhase === 'tracking') return
-    sheetDrag.current = null
+    const drag = sheetDrag.current
+    if (drag) {
+      sheetDrag.current = null
+      releaseSheetCapture(drag)
+    }
     setSheetSnap('current')
     setSheetDragging(false)
   }, [arPhase, sessionId])
@@ -432,6 +465,27 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
         window.clearTimeout(suppressSheetClickTimer.current)
       }
     }
+  }, [])
+
+  useLayoutEffect(() => {
+    if (sheetDragging) return
+    const sheet = sheetRef.current
+    if (!sheet) return
+    sheet.style.height = ''
+    sheet.style.transition = ''
+  }, [sheetDragging, sheetSnap])
+
+  useEffect(() => {
+    function cancelDraggedSheet() {
+      const drag = sheetDrag.current
+      if (!drag) return
+      sheetDrag.current = null
+      releaseSheetCapture(drag)
+      setSheetDragging(false)
+      suppressSheetClickOnce()
+    }
+    window.addEventListener('resize', cancelDraggedSheet)
+    return () => window.removeEventListener('resize', cancelDraggedSheet)
   }, [])
 
   useEffect(() => {
@@ -761,18 +815,86 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
     }, 400)
   }
 
+  function measureSheetBounds(): SheetBounds | null {
+    const sheet = sheetRef.current
+    if (!sheet) return null
+    const read = (snap: SheetSnap) =>
+      sheet.querySelector<HTMLElement>(`[data-sheet-measure='${snap}']`)?.getBoundingClientRect().height ?? 0
+    const bounds = {
+      collapsed: read('collapsed'),
+      current: read('current'),
+      expanded: read('expanded'),
+    }
+    if (bounds.collapsed <= 0 || bounds.current < bounds.collapsed || bounds.expanded < bounds.current) {
+      return null
+    }
+    return bounds
+  }
+
+  function releaseSheetCapture(drag: SheetDrag) {
+    drag.captureLoss.abort()
+    try {
+      if (drag.captureTarget.isConnected && drag.captureTarget.hasPointerCapture(drag.pointerId)) {
+        drag.captureTarget.releasePointerCapture(drag.pointerId)
+      }
+    } catch {
+      // The browser may already have released capture after a cancel or loss.
+    }
+  }
+
+  function applySheetDragHeight(height: number) {
+    const sheet = sheetRef.current
+    if (!sheet) return
+    sheet.style.transition = 'none'
+    sheet.style.height = `${height}px`
+  }
+
+  function settleSheetDrag(drag: SheetDrag) {
+    setSheetSnap(nearestSheetSnap(drag.lastHeight, drag.bounds))
+  }
+
+  function settleLostSheetDrag(drag: SheetDrag) {
+    if (sheetDrag.current !== drag) return
+    sheetDrag.current = null
+    drag.captureLoss.abort()
+    setSheetDragging(false)
+    if (!drag.moved) return
+    suppressSheetClickOnce()
+    settleSheetDrag(drag)
+  }
+
   function handleSheetPointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
     if (event.pointerType === 'mouse' && event.button !== 0) return
     if (sheetDrag.current) return
-    sheetDrag.current = {
+    const sheet = sheetRef.current
+    if (!sheet) return
+    const bounds = measureSheetBounds()
+    if (!bounds) return
+    const startHeight = clampSheetHeight(sheet.getBoundingClientRect().height, bounds)
+    applySheetDragHeight(startHeight)
+    const drag: SheetDrag = {
       pointerId: event.pointerId,
+      captureTarget: event.currentTarget,
+      captureLoss: new AbortController(),
       startY: event.clientY,
-      startSnap: sheetSnap,
+      startHeight,
+      lastHeight: startHeight,
+      bounds,
       moved: false,
     }
+    sheetDrag.current = drag
     suppressSheetClick.current = false
     sheetKeyboardInput.current = false
     setSheetDragging(true)
+    // Keep a native guard for lost capture: the non-bubbling browser event is the authoritative
+    // signal that the held pointer has left this handle.
+    event.currentTarget.addEventListener(
+      'lostpointercapture',
+      (lostEvent) => {
+        if ((lostEvent as PointerEvent).pointerId === drag.pointerId) settleLostSheetDrag(drag)
+      },
+      { signal: drag.captureLoss.signal },
+    )
     try {
       event.currentTarget.setPointerCapture(event.pointerId)
     } catch {
@@ -783,44 +905,30 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   function handleSheetPointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
     const drag = sheetDrag.current
     if (!drag || event.pointerId !== drag.pointerId) return
+    const height = clampSheetHeight(drag.startHeight - (event.clientY - drag.startY), drag.bounds)
+    drag.lastHeight = height
+    applySheetDragHeight(height)
     if (!drag.moved && Math.abs(event.clientY - drag.startY) > SHEET_DRAG_TAP_LIMIT) {
       drag.moved = true
     }
     if (drag.moved && event.cancelable) event.preventDefault()
   }
 
-  function finishSheetDrag(event: ReactPointerEvent<HTMLButtonElement>, cancelled: boolean) {
+  function finishSheetDrag(event: ReactPointerEvent<HTMLButtonElement>) {
     const drag = sheetDrag.current
     if (!drag || event.pointerId !== drag.pointerId) return
     sheetDrag.current = null
+    releaseSheetCapture(drag)
     setSheetDragging(false)
-    try {
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId)
-      }
-    } catch {
-      // The browser may already have released capture after a cancel.
-    }
-    if (cancelled || !drag.moved) {
-      if (cancelled && drag.moved) suppressSheetClickOnce()
-      return
-    }
+    if (!drag.moved) return
     suppressSheetClickOnce()
-    const distance = event.clientY - drag.startY
-    if (distance <= -SHEET_DRAG_SNAP_DISTANCE) {
-      setSheetSnap(moveSheetSnap(drag.startSnap, 1))
-    } else if (distance >= SHEET_DRAG_SNAP_DISTANCE) {
-      setSheetSnap(moveSheetSnap(drag.startSnap, -1))
-    }
+    settleSheetDrag(drag)
   }
 
   function handleSheetLostPointerCapture(event: ReactPointerEvent<HTMLButtonElement>) {
     const drag = sheetDrag.current
     if (!drag || event.pointerId !== drag.pointerId) return
-    const moved = drag.moved
-    sheetDrag.current = null
-    setSheetDragging(false)
-    if (moved) suppressSheetClickOnce()
+    settleLostSheetDrag(drag)
   }
 
   function handleSheetHandleClick() {
@@ -1233,11 +1341,17 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
 
       {showBuildSheet && (
         <section
+          ref={sheetRef}
           className="hunt-sheet hunt-sheet--build"
           aria-label="Build controls"
           data-snap={sheetSnap}
           data-dragging={sheetDragging ? 'true' : undefined}
         >
+          <div className="hunt-sheet__measure" aria-hidden="true">
+            <span data-sheet-measure="collapsed" />
+            <span data-sheet-measure="current" />
+            <span data-sheet-measure="expanded" />
+          </div>
           <button
             type="button"
             className="hunt-sheet__handle"
@@ -1246,15 +1360,20 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
             aria-controls="break-waves-build-body"
             onPointerDown={handleSheetPointerDown}
             onPointerMove={handleSheetPointerMove}
-            onPointerUp={(event) => finishSheetDrag(event, false)}
-            onPointerCancel={(event) => finishSheetDrag(event, true)}
+            onPointerUp={finishSheetDrag}
+            onPointerCancel={finishSheetDrag}
             onLostPointerCapture={handleSheetLostPointerCapture}
             onClick={handleSheetHandleClick}
             onKeyDown={handleSheetHandleKeyDown}
           >
             <span className="hunt-sheet__grip" aria-hidden="true" />
           </button>
-          <div id="break-waves-build-body" className="hunt-sheet__body">
+          <div
+            id="break-waves-build-body"
+            className="hunt-sheet__body"
+            aria-hidden={sheetBodyUnavailable || undefined}
+            inert={sheetBodyUnavailable}
+          >
             <button
               type="button"
               className="hunt-lens"
