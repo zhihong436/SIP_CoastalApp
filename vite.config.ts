@@ -13,6 +13,7 @@ export default defineConfig({
         ar: 'ar.html',
         card: 'card.html',
         diorama: 'diorama.html',
+        world: 'world.html',
       },
     },
   },

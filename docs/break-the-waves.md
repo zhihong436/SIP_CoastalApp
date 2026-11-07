@@ -18,6 +18,7 @@ shown as **not built yet**; no later stop is simulated or unlocked.
 | `/card.html` | Print helper. The card type selector keeps the standalone experiment as the default and adds a Break the waves hunt variant. |
 | `/ar.html` | Standalone experiment, unchanged and still usable. |
 | `/diorama.html` | Standalone diorama preview. It is presentation-only and is not the paired stop or a debug route into it. |
+| `/world.html` | Isolated world-tracking feasibility experiment. It shows the approved lighthouse island, places it by explicit tap on 8th Wall's estimated floor, and keeps local exposed/protected examples. It is not the paired stop and has no account, save, sync or progression. |
 
 Unknown or future QR names do not call a hunt mutation. The hunt scanner accepts only the exact
 `/scan/break-the-waves` path. The legacy scan and in-app scanner do not accept the hunt card. The
@@ -141,6 +142,146 @@ at the same marker/distance, then briefly hide and reacquire the marker. Check b
 that tracking loss still disables construction and that saved pieces recover. Do not infer success
 from synthetic filter output. The Oblique orientation and close-view clipping issues remain separate.
 Revert by removing the explicit `filterBeta` option, restoring the pinned library default.
+
+## World-tracking feasibility experiment
+
+`/world.html` is a separate feasibility experiment, not a migration of the paired game. It is not
+linked from the hunt card, does not use MindAR or `coastal-target.mind`, and does not call the app,
+Supabase or the backend. The approved lighthouse-island model comes from
+`createLighthouseDiorama` in `src/diorama/dioramaModel.ts`; the page owns only the AR lifecycle,
+floor placement, status UI and local example state. There is no account, save, sync, page-level
+analytics call, real puzzle progression or authoritative layout write.
+
+Placement uses 8th Wall's single dynamically estimated floor plane (`Y = 0`). It is **not** ARKit
+or ARCore tabletop surface detection. 8th Wall's world-tracking troubleshooting page says the
+engine continuously recalculates one horizontal plane and that multiple horizontal surfaces in
+view, such as a table and floor together, can confuse tracking. Start on a textured floor; a table
+is exploratory only and is not guaranteed. The experiment is opened directly by URL or OS QR
+launcher, so the printed card can stay out of view. There is no target file or recognition of the
+card illustration.
+
+The page loads the local Three.js 0.160 module first, assigns `window.THREE`, then loads the local
+vendored `xr.js` with `data-preload-chunks="slam"`. GlTextureRenderer, Threejs, XrController and
+the page module are installed in that order. The island root stays horizontal in the scene. The
+engine drives a real perspective camera; the page sets only an initial floor-facing pose to
+establish the tracking origin. On a valid tap the island is placed once on the estimated floor and
+yawed once so its seaward `+Z` side faces the camera. Later phone motion changes the real
+perspective; there is no fixed camera, orbit, artificial model tilt or per-frame camera-facing
+transform. The island uses a fixed 0.24 responsive-tracker scale, chosen for a phone held a step or
+two away. It is not labelled in metres; users should step back if framing cannot fit.
+
+Lifecycle and UX:
+
+- The camera starts only from the explicit **Start AR** button. Engine and Three load while the
+  page is idle without requesting camera permission; the idle canvas stays hidden. Engine readiness
+  is exclusively the documented `xrloaded` event (registered before the local `xr.js` is inserted).
+  A script load or an existing `window.XR8` global is not treated as ready, because the preloaded
+  SLAM chunk may still be loading.
+- `XrController.pipelineModule()` publishes `camera`, `deviceorientation` and `devicemotion` as
+  required permissions. `XR8.run()` is called synchronously in the Start gesture so the engine's
+  permission framework can request them. The page does not add a second
+  `DeviceOrientationEvent`/`DeviceMotionEvent` request. `disableWorldTracking` is explicitly
+  `false`, the rear camera is requested, and `allowedDevices` is `MOBILE` (no `ANY` bypass).
+- Statuses distinguish preparing, starting, ready to place, placed, tracking limited and stopped or
+  error. Tracking limited and initialising hide the island and disable placement instead of
+  freezing a successful-looking pose. Recovery shows the same anchor again. Normal tracking is not
+  a stability guarantee.
+- **Re-place** clears the old anchor and needs a fresh tap; it does not call
+  `XR8.XrController.recenter()` automatically. Stop, page hide and background/visibility release
+  the camera and scene. After a completed running session, Start can begin a fresh session and
+  requires a fresh placement. Cancelling a startup, a camera/engine failure reported before
+  `onStart`, or a rejected `XR8.run()` before `onStart` requires an explicit page reload before
+  another Start. Once `onStart` has fired, failures can retry with Start or reload. The 450 ms UI
+  settle is not restart synchronization.
+- Stale `onStart`/run completions and stale `onUpdate`/status/exception callbacks cannot stop,
+  clear, tear down or change the UI of a newer generation. A delayed start abandoned before
+  `onStart` is released and reload-gated, so a retry cannot overlap the old run. Repeated starts
+  after a completed session clear the previous modules first. Load failure always offers reload;
+  failures after `onStart` can retry with Start or reload.
+- The exposed/protected buttons are illustrative local examples only. Protected uses the proven
+  local pieces at `(-0.32, 0.22)`, `(-0.20, 0.14)`, `(0.32, 0.22)`, `(0.20, 0.14)` with owners
+  `a1`, `a2`, `b1`, `b2` and rotation `0`; exposed uses no pieces. Switching them does not move the
+  island or save anything.
+- This page stores no camera frames or poses. The pre-camera loader was observed using same-origin
+  files only. Post-camera engine network behaviour has **not** been verified, so the page does not
+  claim zero telemetry or no camera transfer. The engine is provided by Niantic Spatial under the
+  proprietary XR Engine License Agreement, not the MIT engine package. Visible attribution links to
+  the local unmodified `LICENSE` and says it is provided AS IS, without warranties and without
+  endorsement. This is not a legal-compliance conclusion.
+
+### Two-iPhone acceptance checklist
+
+Record the actual devices before testing. Fill in the table on each phone. This checklist has not
+been run yet; the desktop fallback and synthetic lifecycle checks below are not phone evidence.
+
+| Phone | Model | iOS version | Safari version |
+| --- | --- | --- | --- |
+| A |  |  |  |
+| B |  |  |  |
+
+Open `/world.html` directly on the branch preview host or from an OS QR launcher URL. Do not use
+the hunt card. Use the same branch build on both phones. This pass did not commit, push or deploy,
+so publish the branch through the normal owner process before phone testing; the expected
+branch-preview path is `/world.html` on the existing preview host.
+
+1. [ ] Keep the printed card out of view. Stand over a textured floor with cracks, gravel, grass
+   or a patterned rug; keep tables and other horizontal surfaces out of view. Confirm no camera
+   prompt appears before pressing Start AR.
+2. [ ] Press **Start AR** and allow camera access plus Motion & Orientation Access (and any second
+   motion prompt the engine shows). Confirm there is no uncaught error and the status moves through
+   starting to ready.
+3. [ ] Move the phone slowly. Confirm the island is hidden while tracking is limited or
+   initialising, and appears only after **Ready to place**.
+4. [ ] Tap a floor patch in the visible camera area above the controls. Confirm the island sits on
+   the estimated floor, its seaward side faces the phone, and it does not follow the camera.
+   Sidestep slowly, then walk around the island for 60 s. Note jitter, drift, loss/recovery and
+   whether recovery reuses the same anchor.
+5. [ ] Switch Exposed and Protected. Confirm the island does not move and nothing is saved or sent
+   to the app. Switch back.
+6. [ ] Press **Re-place**. Confirm the old anchor disappears, the next tap sets a new one, and the
+   page says recalibration may be needed. Do not expect an automatic recenter.
+7. [ ] Background the browser or press **Stop camera**. Confirm the camera indicator stops and the
+   page asks for Start AR again. Return, Start AR, and confirm a fresh placement is required with
+   no duplicate camera loop, canvas or scene.
+8. [ ] Deny camera once (or reset Safari camera permission). Confirm a helpful error, no uncaught
+   exception, and that the page follows its retry/reload instruction. Startup cancellation,
+   `XR8.run` rejection before `onStart`, and camera failure before `onStart` are reload-gated;
+   failures after `onStart` can retry with Start or Reload. If motion/orientation is denied, record
+   the engine's message and whether a reload + Start recovers.
+9. [ ] Repeat placement on a table as exploratory only. Record whether tracking is lost or
+   confused. Do not treat table placement as guaranteed.
+10. [ ] If Safari Web Inspector is available on either phone, record the hosts and requests observed
+    after Start AR and camera use. Report them separately from the pre-camera same-origin loader
+    observation; do not infer zero telemetry from the idle check.
+
+### Experiment checks in this pass
+
+The real desktop rows below were recorded before the loader/lifecycle correction. Per the planner's
+instruction they were not rerun; the correction pass reran only the affected loader-readiness and
+lifecycle probes.
+
+| Check | Result |
+| --- | --- |
+| `npm run build` (`tsc -b && vite build`) | Exit 0 with `world.html` as an additional production entry; the Vite chunk-size warning is existing and non-fatal. |
+| `git diff --check` | Exit 0. Existing prerequisite vendor changes remain untouched by this experiment. |
+| Real Chromium 155 headless on the built `dist/` entry at 390×844 and 320×568 | Idle page made no camera request (`getUserMedia` calls 0, camera permission `prompt`, no video); canvas hidden; Start, state buttons, visible licence link and layout were accessible; no horizontal overflow. All observed requests used `localhost`: page/CSS/JS, Three r160, `xr.js`, `xr-slam.js`, all HTTP 200. |
+| Unsupported desktop **Start AR** | Showed the unsupported OS/browser fallback, made 0 `getUserMedia` calls, left camera permission `prompt`, and raised no page exception. `XR8.XrDevice.isDeviceBrowserCompatible({allowedDevices: MOBILE})` returned false with reasons `[1, 2]`. |
+| Built-page engine load failure | A blocked `xr.js` showed the local-engine error and a visible reload action; no uncaught page error. The browser still logged the failed resource request. |
+| Public permission declarations (pre-camera) | Adding the same pipeline modules exposed `camera`, `deviceorientation` and `devicemotion` via `XR8.requiredPermissions()` on the desktop host. This is permission declaration evidence, not proof that iOS prompts or SLAM works. |
+| Simulated loader readiness (clearly labelled simulated) | With a fake `XR8` global present before a delayed `xrloaded`, the page stayed in `loading` with Start disabled until the event, then became idle/enabled. With the event never delivered (engine timeout shortened to 600 ms for the probe), it stayed loading until the timeout, then showed the SLAM-readiness error, kept Start disabled and exposed Reload. Real Three r160/page; readiness timing simulated. |
+| Synthetic fake-XR8 lifecycle (clearly labelled synthetic) | Earlier placement/yaw/anchor/recovery/exposed/re-place checks remain as recorded. The correction probe additionally verified normal stop→new start; stale old `onStart`, `onException` and camera-failed callbacks plus a delayed old run completion leave the new camera/scene/status/modules intact; cancelling a delayed start, `XR8.run` rejection before `onStart`, or camera failure before `onStart` requires reload; retry cannot start before reload; cancelled attempts do not reopen the camera. Fake-engine evidence only. |
+| Focused `XR8.run` rejection before `onStart` (clearly labelled synthetic) | A fake `XR8.run` rejection before `onStart` produced the camera-open error, Start disabled, Reload visible, one rejected run and no retry run; late old `onStart`/`onException`/camera-failed callbacks did not resurrect UI, camera, modules or scene. This does not prove the real engine cancels hardware camera acquisition or release. |
+
+Known limits from this pass: actual iPhone world tracking, r160 camera-loop rendering, phone
+performance/stability, iOS permission prompts, two-phone repeatability, Safari network calls after
+camera start and any privacy/clipboard/telemetry behaviour remain unverified until the checklist is
+run. The loader-readiness and lifecycle probes use simulated timing/fake-engine callbacks; they do
+not prove real `xrloaded`/SLAM timing or iOS permission behaviour. The run-rejection probe does not
+prove the real engine cancels hardware camera acquisition or releases the iPhone camera; retain
+the phone camera-release check as unverified. The desktop host is incompatible
+and never requested a camera; its failure is not r160 camera-loop evidence. The latest official
+8th Wall example uses r183.2; this experiment intentionally stays on the repository's r160 module
+for the approved island and does not upgrade.
 
 ## Migration and legacy limitations
 
