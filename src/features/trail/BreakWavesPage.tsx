@@ -1,11 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
 import { BackIcon, CheckIcon, QrIcon, WaveIcon } from '../../components/Icons'
 import { supabase } from '../../lib/supabase'
 import { useMatch } from '../chat/useMatch'
 import { HuntCardScanner } from './HuntCardScanner'
 import { BreakWavesWorldAr, type WorldArPhase, type WorldArState } from './breakWavesWorldAr'
+import { hasBreakWavesScanReceipt, type BreakWavesEntryMode } from './breakWavesEntry'
 import {
   evaluateBreakWaves,
   failureText,
@@ -28,6 +36,24 @@ type Pending =
   | { kind: 'ready' }
   | { kind: 'ack' }
   | null
+
+type SheetSnap = 'collapsed' | 'current' | 'expanded'
+
+const SHEET_SNAPS: readonly SheetSnap[] = ['collapsed', 'current', 'expanded']
+const SHEET_DRAG_TAP_LIMIT = 6
+const SHEET_DRAG_SNAP_DISTANCE = 28
+
+interface SheetDrag {
+  pointerId: number
+  startY: number
+  startSnap: SheetSnap
+  moved: boolean
+}
+
+function moveSheetSnap(snap: SheetSnap, direction: 1 | -1): SheetSnap {
+  const index = SHEET_SNAPS.indexOf(snap)
+  return SHEET_SNAPS[Math.min(SHEET_SNAPS.length - 1, Math.max(0, index + direction))]
+}
 
 interface RpcRow {
   revision?: number
@@ -124,6 +150,36 @@ function startLabel(phase: WorldArPhase) {
   if (phase === 'paused' || phase === 'stopped' || phase === 'failed') return 'Start camera again'
   if (phase === 'denied') return 'Try camera again'
   return 'Start camera'
+}
+
+interface EntryActionsProps {
+  pending: boolean
+  notice: string | null
+  onScan: () => void
+  onTest: () => void
+}
+
+function EntryActions({ pending, notice, onScan, onTest }: EntryActionsProps) {
+  return (
+    <>
+      <button type="button" className="button button--primary button--full" disabled={pending} onClick={onScan}>
+        <QrIcon />
+        Scan the QR card
+      </button>
+      <p className="hunt__fine">You can also open the printed card's link with your phone camera.</p>
+      <button type="button" className="button button--secondary button--full" disabled={pending} onClick={onTest}>
+        {pending ? 'Opening…' : 'Place without QR (testing)'}
+      </button>
+      <p className="hunt__fine">
+        Testing entry skips the QR card on this phone only. It does not reset the shared layout, result or progression.
+      </p>
+      {notice && (
+        <p className="hunt__notice" role="alert">
+          {notice}
+        </p>
+      )}
+    </>
+  )
 }
 
 function EngineNotice() {
@@ -244,6 +300,8 @@ function WorldCameraControls({
 
 export function BreakWavesPage({ sessionId, matchId }: Props) {
   const match = useMatch(matchId)
+  const location = useLocation()
+  const navigate = useNavigate()
   const { state, reload } = useBreakWaves(sessionId)
   const [selectedId, setSelectedId] = useState<PieceId | null>(null)
   const [lensOn, setLensOn] = useState(true)
@@ -253,12 +311,27 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   const [pending, setPending] = useState<Pending>(null)
   const [ghost, setGhost] = useState<GhostPiece | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [entry, setEntry] = useState<{ sessionId: string; mode: BreakWavesEntryMode } | null>(null)
+  const [entryPending, setEntryPending] = useState<'test' | null>(null)
+  const [entryNotice, setEntryNotice] = useState<string | null>(null)
   const [dismissedTest, setDismissedTest] = useState<number | null>(null)
+  const [sheetSnap, setSheetSnap] = useState<SheetSnap>('current')
+  const [sheetDragging, setSheetDragging] = useState(false)
+  const scanReceipt = hasBreakWavesScanReceipt(location.state, sessionId)
+  const localEntryMode = entry?.sessionId === sessionId ? entry.mode : null
+  const entryMode = localEntryMode ?? (scanReceipt ? 'scan' : null)
+  const hasEntry = entryMode !== null
   const arPhase = worldState.phase
   const stageRef = useRef<HTMLDivElement>(null)
   const arRef = useRef<BreakWavesWorldAr | null>(null)
   const mounted = useRef(true)
   const mutating = useRef(false)
+  const scannerRun = useRef(0)
+  const entryTestRunning = useRef(false)
+  const sheetDrag = useRef<SheetDrag | null>(null)
+  const suppressSheetClick = useRef(false)
+  const sheetKeyboardInput = useRef(false)
+  const suppressSheetClickTimer = useRef<number | null>(null)
   const activeSessionId = useRef(sessionId)
   activeSessionId.current = sessionId
   const handlerRef = useRef<{ select: (id: PieceId) => void; water: (point: { x: number; z: number }) => void }>({
@@ -283,6 +356,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   const canEdit = Boolean(
     progress &&
       progress.opened_at &&
+      hasEntry &&
       !progress.solved_at &&
       !pending &&
       arPhase === 'tracking' &&
@@ -316,8 +390,26 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
     setNotice(null)
     setScanning(false)
     setHelp(false)
+    setEntry(null)
+    setEntryPending(null)
+    setEntryNotice(null)
+    scannerRun.current += 1
+    entryTestRunning.current = false
     mutating.current = false
   }, [sessionId])
+
+  // A successful external card route is the only router-state receipt that grants entry. Consume it
+  // once so a reload or a direct trail visit cannot reuse it. The session id in the receipt stops a
+  // stale navigation from unlocking a different trail.
+  useEffect(() => {
+    if (!scanReceipt) return
+    setEntry({ sessionId, mode: 'scan' })
+    setEntryNotice(null)
+    navigate(
+      { pathname: location.pathname, search: location.search, hash: location.hash },
+      { replace: true, state: null },
+    )
+  }, [scanReceipt, sessionId, navigate, location.pathname, location.search, location.hash])
 
   useEffect(() => {
     if (!selectedId) {
@@ -326,6 +418,21 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
     }
     if (!myPieces.some((piece) => piece.id === selectedId)) setSelectedId(myPieces[0]?.id ?? null)
   }, [myPieces, selectedId])
+
+  useEffect(() => {
+    if (arPhase === 'tracking') return
+    sheetDrag.current = null
+    setSheetSnap('current')
+    setSheetDragging(false)
+  }, [arPhase, sessionId])
+
+  useEffect(() => {
+    return () => {
+      if (suppressSheetClickTimer.current !== null) {
+        window.clearTimeout(suppressSheetClickTimer.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     // The SDK is prepared without a camera. This effect deliberately does not depend on pieces,
@@ -552,12 +659,41 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
     mutating.current = false
   }
 
-  async function openScannedStop() {
+  async function enterWithoutQr() {
+    if (entryTestRunning.current || entryPending || hasEntry) return
+    entryTestRunning.current = true
+    setEntryPending('test')
+    setEntryNotice(null)
     const { data, error } = await supabase.rpc('open_break_waves_stop', { p_session_id: sessionId })
-    if (error || data !== true) return false
-    if (!stillCurrent()) return false
+    if (!stillCurrent()) return
+    if (error) {
+      entryTestRunning.current = false
+      setEntryPending(null)
+      setEntryNotice('Could not open the stop. Check your connection and try again.')
+      return
+    }
+    if (data !== true) {
+      entryTestRunning.current = false
+      setEntryPending(null)
+      setEntryNotice('This stop is no longer open.')
+      return
+    }
     await reload()
-    if (!stillCurrent()) return false
+    if (!stillCurrent()) return
+    entryTestRunning.current = false
+    setEntryPending(null)
+    setEntry({ sessionId, mode: 'test' })
+  }
+
+  async function openScannedStop() {
+    const run = scannerRun.current
+    const stillScanning = () => stillCurrent() && scannerRun.current === run
+    const { data, error } = await supabase.rpc('open_break_waves_stop', { p_session_id: sessionId })
+    if (!stillScanning() || error || data !== true) return false
+    await reload()
+    if (!stillScanning()) return false
+    setEntry({ sessionId, mode: 'scan' })
+    setEntryNotice(null)
     setScanning(false)
     return true
   }
@@ -580,13 +716,22 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   }
 
   function openScanner() {
+    if (entryPending) return
     // The scanner may open its own camera only after the AR engine has released its session.
     arRef.current?.stop('stopped')
+    scannerRun.current += 1
+    setEntryNotice(null)
     setScanning(true)
   }
 
+  function closeScanner() {
+    // Closing invalidates any scan request that has not finished granting entry yet.
+    scannerRun.current += 1
+    setScanning(false)
+  }
+
   function startCamera() {
-    if (scanning) return
+    if (scanning || !hasEntry) return
     // XR8.run() must stay inside this click's user gesture; the controller never awaits first.
     arRef.current?.start()
   }
@@ -603,6 +748,96 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
 
   function resizeIsland(percent: number) {
     arRef.current?.setIslandSize(percent)
+  }
+
+  function suppressSheetClickOnce() {
+    suppressSheetClick.current = true
+    if (suppressSheetClickTimer.current !== null) {
+      window.clearTimeout(suppressSheetClickTimer.current)
+    }
+    suppressSheetClickTimer.current = window.setTimeout(() => {
+      suppressSheetClick.current = false
+      suppressSheetClickTimer.current = null
+    }, 400)
+  }
+
+  function handleSheetPointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    if (sheetDrag.current) return
+    sheetDrag.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startSnap: sheetSnap,
+      moved: false,
+    }
+    suppressSheetClick.current = false
+    sheetKeyboardInput.current = false
+    setSheetDragging(true)
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    } catch {
+      // Pointer capture is an enhancement; the pointer handlers still clean up on release.
+    }
+  }
+
+  function handleSheetPointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = sheetDrag.current
+    if (!drag || event.pointerId !== drag.pointerId) return
+    if (!drag.moved && Math.abs(event.clientY - drag.startY) > SHEET_DRAG_TAP_LIMIT) {
+      drag.moved = true
+    }
+    if (drag.moved && event.cancelable) event.preventDefault()
+  }
+
+  function finishSheetDrag(event: ReactPointerEvent<HTMLButtonElement>, cancelled: boolean) {
+    const drag = sheetDrag.current
+    if (!drag || event.pointerId !== drag.pointerId) return
+    sheetDrag.current = null
+    setSheetDragging(false)
+    try {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      }
+    } catch {
+      // The browser may already have released capture after a cancel.
+    }
+    if (cancelled || !drag.moved) {
+      if (cancelled && drag.moved) suppressSheetClickOnce()
+      return
+    }
+    suppressSheetClickOnce()
+    const distance = event.clientY - drag.startY
+    if (distance <= -SHEET_DRAG_SNAP_DISTANCE) {
+      setSheetSnap(moveSheetSnap(drag.startSnap, 1))
+    } else if (distance >= SHEET_DRAG_SNAP_DISTANCE) {
+      setSheetSnap(moveSheetSnap(drag.startSnap, -1))
+    }
+  }
+
+  function handleSheetLostPointerCapture(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = sheetDrag.current
+    if (!drag || event.pointerId !== drag.pointerId) return
+    const moved = drag.moved
+    sheetDrag.current = null
+    setSheetDragging(false)
+    if (moved) suppressSheetClickOnce()
+  }
+
+  function handleSheetHandleClick() {
+    if (suppressSheetClick.current && !sheetKeyboardInput.current) {
+      suppressSheetClick.current = false
+      return
+    }
+    suppressSheetClick.current = false
+    sheetKeyboardInput.current = false
+    setSheetSnap((current) => (current === 'expanded' ? 'current' : 'expanded'))
+  }
+
+  function handleSheetHandleKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    sheetKeyboardInput.current = true
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+    event.preventDefault()
+    setSheetSnap((current) => moveSheetSnap(current, event.key === 'ArrowUp' ? 1 : -1))
   }
 
   if (state.status === 'loading') return <p className="screen muted">Loading Break the waves…</p>
@@ -647,16 +882,16 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
 
   const partner = match.partner
   const cameraRunning = ['starting', 'placing', 'tracking', 'tracking-lost'].includes(arPhase)
+  const showEntryPanel = !clueUnlocked && !scanning && !showResult && !hasEntry
   const showCameraSetup =
     !clueUnlocked &&
     !showResult &&
     !scanning &&
-    progress.opened_at !== null &&
+    hasEntry &&
     (!cameraRunning || arPhase === 'starting')
-  const showPlacement = !clueUnlocked && !showResult && !scanning && arPhase === 'placing'
-  const showTrackingLost = !clueUnlocked && !showResult && !scanning && arPhase === 'tracking-lost'
-  const showBuildSheet = !clueUnlocked && !showResult && !scanning && arPhase === 'tracking'
-  const showScanPanel = !clueUnlocked && !scanning && progress.opened_at === null
+  const showPlacement = !clueUnlocked && !showResult && !scanning && hasEntry && arPhase === 'placing'
+  const showTrackingLost = !clueUnlocked && !showResult && !scanning && hasEntry && arPhase === 'tracking-lost'
+  const showBuildSheet = !clueUnlocked && !showResult && !scanning && hasEntry && arPhase === 'tracking'
   const trackingLabel =
     arPhase === 'tracking'
       ? 'Coast placed'
@@ -782,21 +1017,26 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
         </div>
       )}
 
-      {showScanPanel && (
-        <section className="hunt__setup" aria-labelledby="scan-title">
+      {showEntryPanel && (
+        <section className="hunt__setup" aria-labelledby="entry-title">
           <span className="hunt__setup-icon" aria-hidden="true">
             <QrIcon size={30} />
           </span>
-          <h2 id="scan-title">Find the stop card</h2>
+          <h2 id="entry-title">Scan the stop card</h2>
           <p>
-            Both of you scan the same <strong>Break the waves</strong> card. The scanner releases its camera before the
-            floor AR camera can start, so only one camera is ever in use.
+            Both of you scan the same <strong>Break the waves</strong> card. This phone's camera can start only after
+            its own scan or the testing entry below. The scanner releases its camera before the floor AR camera can
+            start.
           </p>
-          <button type="button" className="button button--primary button--full" onClick={openScanner}>
-            <QrIcon />
-            Scan the QR card
-          </button>
-          <p className="hunt__fine">You can also open the printed card's link with your phone camera.</p>
+          {progress.opened_at !== null && (
+            <p className="hunt__fine">The shared stop is already open. This phone still needs its own entry.</p>
+          )}
+          <EntryActions
+            pending={entryPending !== null}
+            notice={entryNotice}
+            onScan={openScanner}
+            onTest={() => void enterWithoutQr()}
+          />
         </section>
       )}
 
@@ -819,6 +1059,9 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
             onRePlace={rePlaceIsland}
             onSize={resizeIsland}
           />
+          {entryMode === 'test' && (
+            <p className="hunt__fine">Testing entry: this phone skipped the QR scan. Shared progress is unchanged.</p>
+          )}
         </section>
       )}
 
@@ -892,6 +1135,21 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
                 </button>
               </div>
               <IslandSizeControl id="result-island-size" value={worldState.sizePercent} onChange={resizeIsland} />
+              <EngineNotice />
+            </div>
+          ) : !hasEntry ? (
+            <div className="hunt-result__camera">
+              <h2>Enter before starting the camera</h2>
+              <p>
+                Scan the stop card or choose <strong>Place without QR (testing)</strong> on this phone. Your saved
+                result, acknowledgement and shared progression are unchanged.
+              </p>
+              <EntryActions
+                pending={entryPending !== null}
+                notice={entryNotice}
+                onScan={openScanner}
+                onTest={() => void enterWithoutQr()}
+              />
               <EngineNotice />
             </div>
           ) : (
@@ -974,111 +1232,133 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
       )}
 
       {showBuildSheet && (
-        <section className="hunt-sheet" aria-label="Build controls">
-          <div className="hunt-sheet__handle" aria-hidden="true" />
+        <section
+          className="hunt-sheet hunt-sheet--build"
+          aria-label="Build controls"
+          data-snap={sheetSnap}
+          data-dragging={sheetDragging ? 'true' : undefined}
+        >
           <button
             type="button"
-            className="hunt-lens"
-            aria-pressed={lensOn}
-            onClick={() => setLensOn(!lensOn)}
+            className="hunt-sheet__handle"
+            aria-label={sheetSnap === 'expanded' ? 'Collapse build controls' : 'Expand build controls'}
+            aria-expanded={sheetSnap === 'expanded'}
+            aria-controls="break-waves-build-body"
+            onPointerDown={handleSheetPointerDown}
+            onPointerMove={handleSheetPointerMove}
+            onPointerUp={(event) => finishSheetDrag(event, false)}
+            onPointerCancel={(event) => finishSheetDrag(event, true)}
+            onLostPointerCapture={handleSheetLostPointerCapture}
+            onClick={handleSheetHandleClick}
+            onKeyDown={handleSheetHandleKeyDown}
           >
-            <span>
-              <WaveIcon size={18} />
-              Your {side === 'a' ? 'wave' : 'seabed'} lens
-            </span>
-            <span className="hunt-lens__switch" aria-hidden="true" />
+            <span className="hunt-sheet__grip" aria-hidden="true" />
           </button>
-
-          <IslandSizeControl value={worldState.sizePercent} onChange={resizeIsland} />
-          <div className="hunt-island-actions">
-            <button type="button" className="button button--secondary" onClick={rePlaceIsland}>
-              Re-place coast
-            </button>
-            <button type="button" className="button button--secondary" onClick={stopCamera}>
-              Stop camera
-            </button>
-          </div>
-
-          <div className="hunt-sheet__head">
-            <strong>Your breakwaters</strong>
-            <span>
-              {ownPlaced} of 2 placed · revision {progress.revision}
-            </span>
-          </div>
-          <div className="hunt-pieces">
-            {myPieces.map((piece) => (
-              <button
-                key={piece.id}
-                type="button"
-                className="hunt-piece"
-                data-selected={piece.id === selectedId}
-                data-placed={piece.placed}
-                aria-pressed={piece.id === selectedId}
-                onClick={() => selectPiece(piece.id)}
-              >
-                <span className="hunt-piece__swatch" data-owner={piece.owner} aria-hidden="true" />
-                <span>
-                  <strong>{piece.id.toUpperCase()}</strong>
-                  <small>{piece.placed ? 'Placed' : 'Not placed'}</small>
-                </span>
-                {piece.placed && <CheckIcon size={16} />}
-              </button>
-            ))}
-          </div>
-
-          <div className="hunt-controls">
+          <div id="break-waves-build-body" className="hunt-sheet__body">
             <button
               type="button"
-              className="button button--secondary hunt-controls__button"
-              disabled={!canEdit || !selectedPiece?.placed || pending?.kind === 'edit'}
-              onClick={rotateSelected}
+              className="hunt-lens"
+              aria-pressed={lensOn}
+              onClick={() => setLensOn(!lensOn)}
             >
-              Rotate 15°
-            </button>
-            <button
-              type="button"
-              className="button button--secondary hunt-controls__button"
-              disabled={!canEdit || !selectedPiece?.placed || pending?.kind === 'return'}
-              onClick={() => void returnPiece()}
-            >
-              Return
-            </button>
-            <span className="hunt-controls__tip">
-              {pending
-                ? 'Saving accepted change…'
-                : selectedPiece?.placed
-                  ? 'Tap the water to move your selected piece.'
-                  : 'Select a piece, then tap the water to place it.'}
-            </span>
-          </div>
-
-          <div className="hunt-ready">
-            <button
-              type="button"
-              className="button button--primary hunt-ready__button"
-              disabled={!canReady || pending?.kind === 'ready'}
-              onClick={() => void setReady()}
-            >
-              {pending?.kind === 'ready' ? 'Saving…' : myReady ? 'Ready · waiting' : 'Ready to test'}
-            </button>
-            <div className="hunt-partner">
-              <Avatar name={partner.name} className="avatar avatar--small" />
               <span>
-                Partner
-                <strong>{partnerReady ? 'Ready ✓' : 'Building…'}</strong>
+                <WaveIcon size={18} />
+                Your {side === 'a' ? 'wave' : 'seabed'} lens
+              </span>
+              <span className="hunt-lens__switch" aria-hidden="true" />
+            </button>
+
+            <IslandSizeControl value={worldState.sizePercent} onChange={resizeIsland} />
+            <div className="hunt-island-actions">
+              <button type="button" className="button button--secondary" onClick={rePlaceIsland}>
+                Re-place coast
+              </button>
+              <button type="button" className="button button--secondary" onClick={stopCamera}>
+                Stop camera
+              </button>
+            </div>
+
+            <div className="hunt-sheet__head">
+              <strong>Your breakwaters</strong>
+              <span>
+                {ownPlaced} of 2 placed · revision {progress.revision}
               </span>
             </div>
+            <div className="hunt-pieces">
+              {myPieces.map((piece) => (
+                <button
+                  key={piece.id}
+                  type="button"
+                  className="hunt-piece"
+                  data-selected={piece.id === selectedId}
+                  data-placed={piece.placed}
+                  aria-pressed={piece.id === selectedId}
+                  onClick={() => selectPiece(piece.id)}
+                >
+                  <span className="hunt-piece__swatch" data-owner={piece.owner} aria-hidden="true" />
+                  <span>
+                    <strong>{piece.id.toUpperCase()}</strong>
+                    <small>{piece.placed ? 'Placed' : 'Not placed'}</small>
+                  </span>
+                  {piece.placed && <CheckIcon size={16} />}
+                </button>
+              ))}
+            </div>
+
+            <div className="hunt-controls">
+              <button
+                type="button"
+                className="button button--secondary hunt-controls__button"
+                disabled={!canEdit || !selectedPiece?.placed || pending?.kind === 'edit'}
+                onClick={rotateSelected}
+              >
+                Rotate 15°
+              </button>
+              <button
+                type="button"
+                className="button button--secondary hunt-controls__button"
+                disabled={!canEdit || !selectedPiece?.placed || pending?.kind === 'return'}
+                onClick={() => void returnPiece()}
+              >
+                Return
+              </button>
+              <span className="hunt-controls__tip">
+                {pending
+                  ? 'Saving accepted change…'
+                  : selectedPiece?.placed
+                    ? 'Tap the water to move your selected piece.'
+                    : 'Select a piece, then tap the water to place it.'}
+              </span>
+            </div>
+
+            <div className="hunt-ready">
+              <button
+                type="button"
+                className="button button--primary hunt-ready__button"
+                disabled={!canReady || pending?.kind === 'ready'}
+                onClick={() => void setReady()}
+              >
+                {pending?.kind === 'ready' ? 'Saving…' : myReady ? 'Ready · waiting' : 'Ready to test'}
+              </button>
+              <div className="hunt-partner">
+                <Avatar name={partner.name} className="avatar avatar--small" />
+                <span>
+                  Partner
+                  <strong>{partnerReady ? 'Ready ✓' : 'Building…'}</strong>
+                </span>
+              </div>
+            </div>
+            <p className="hunt-sheet__note">
+              {notice ? (
+                <span role="alert">{notice}</span>
+              ) : pending ? (
+                'Not accepted yet. Waiting for the database to confirm this change.'
+              ) : (
+                `Saved layout revision ${progress.revision}. ${myReady ? 'A change clears both ready checks.' : ownPlaced < 2 ? 'Place both of your pieces to ready the test.' : 'Test starts when you are both ready.'}`
+              )}
+            </p>
+            <EngineNotice />
           </div>
-          <p className="hunt-sheet__note">
-            {notice ? (
-              <span role="alert">{notice}</span>
-            ) : pending ? (
-              'Not accepted yet. Waiting for the database to confirm this change.'
-            ) : (
-              `Saved layout revision ${progress.revision}. ${myReady ? 'A change clears both ready checks.' : ownPlaced < 2 ? 'Place both of your pieces to ready the test.' : 'Test starts when you are both ready.'}`
-            )}
-          </p>
-          <EngineNotice />
         </section>
       )}
 
@@ -1115,7 +1395,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
         </section>
       )}
 
-      {scanning && <HuntCardScanner onClose={() => setScanning(false)} onDetected={openScannedStop} />}
+      {scanning && <HuntCardScanner onClose={closeScanner} onDetected={openScannedStop} />}
     </div>
   )
 }

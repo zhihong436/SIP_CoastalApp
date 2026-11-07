@@ -27,6 +27,14 @@ reverse is refused too: a legacy card opened from a hunt trail shows a wrong-car
 database trigger prevents the old problem-board functions from writing `stop_progress` for a hunt
 session.
 
+Entry is local to each phone. A successful in-app scan or canonical `/scan/break-the-waves` link
+calls `open_break_waves_stop` and grants entry only to that page view; the external link passes a
+one-shot router-state receipt bound to the session id. Shared `opened_at` alone, a direct trail
+visit or a reload always shows the scan/testing choice. The separate **Place without QR (testing)**
+button calls the same active-stop/ownership RPC, marks only this phone's entry as testing and resets
+no layout, result, readiness or progression. Neither path starts the camera; **Start camera** remains
+a separate explicit action.
+
 ## Challenge rules
 
 The model is an illustrative teaching model, not engineering advice. Breakwaters reduce wave
@@ -95,6 +103,13 @@ MindAR 1.2.5 and Three.js 0.160.0 files under `public/ar/vendor/`, plus the comp
 `public/ar/targets/coastal-target.mind`; those assets and the import map are unchanged. No CDN or
 additional engine is used by the paired page.
 
+- Entry is gated per page. A direct trail visit, reload or previous shared `opened_at` does not
+  authorise this phone; it must scan the card or use the separate testing entry. The external card
+  route passes its one-shot receipt only after `open_break_waves_stop` succeeds, and the page
+  compares the receipt's session id before consuming it. The testing button uses the same RPC as a
+  real scan (so active-stop and ownership checks still apply) but is tracked as an explicit testing
+  bypass, not a successful scan. A failed RPC, a closed scanner or a stale session response does not
+  grant entry.
 - The QR scanner is not the AR camera. Before the page opens the scanner it stops and releases the
   world-tracking controller; the scanner unmounts and releases its own tracks before Start is
   available again. The controller owns the rear camera while it runs. Navigation, page hide,
@@ -151,15 +166,26 @@ additional engine is used by the paired page.
 - The camera UI shows engine preparation (Start disabled), an explicit Start when prepared,
   Cancel start/Stop camera, floor-placement instructions before the coast is placed, tracking-loss
   recovery, and denied/unavailable/failed diagnostics. Reload is surfaced whenever the controller
-  requires it. While a saved result is on screen, the result keeps local camera controls and the
-  8th Wall attribution visible. When already tracking it shows compact Stop/Re-place/size controls;
-  when not tracking it shows the appropriate Start/Reload/recovery controls. The tracking-limited
-  recovery card also keeps the attribution/licence available. Acknowledging a successful result
-  remains available with the camera off.
+  requires it. Start is shown only after this phone has scanned or chosen the testing entry. While a
+  saved result is on screen, the result keeps local camera controls and the 8th Wall attribution
+  visible, but the same entry gate replaces Start until this phone enters; the result and both
+  players' acknowledgement remain available. When already tracking it shows compact Stop/Re-place/
+  size controls; when not tracking it shows the appropriate Start/Reload/recovery controls. The
+  tracking-limited recovery card also keeps the attribution/licence available. Acknowledging a
+  successful result remains available with the camera off.
 - The tracking build sheet is height-bounded on portrait phones so the authoritative water,
   targets and placed pieces remain above it at 390×844 and 320×568. In short landscape the build,
   placement and result sheets become a bounded, scrollable right-side dock; the camera/puzzle
-  region on the left stays unobscured instead of being reduced to a thin strip.
+  region on the left stays unobscured instead of being reduced to a thin strip. The build sheet
+  keeps its ~43dvh default framing and adds a 44 px pull handle above the lens. A touch or mouse
+  drag moves it between 28dvh collapsed, 43dvh current and 82dvh expanded snaps on portrait; the
+  short-landscape dock uses 46dvh collapsed, its existing height for current and an expanded height
+  that starts below the header. The handle stays outside the scrolling body, so it remains
+  reachable after the controls scroll. Tapping the handle, Enter/Space or ArrowUp/ArrowDown gives a
+  non-drag alternative; `aria-expanded`, `aria-controls` and a state-dependent accessible label
+  describe it. Pointer capture, handle-only `touch-action`, cancellation and trailing-click
+  suppression keep the drag from becoming a puzzle tap. Moving or resizing the sheet is local UI
+  only: it makes no RPC and changes no revision, readiness, island size or saved anchor.
 - The app stores no camera frames or poses and adds no recording, upload or analytics service of
   its own. The local 8th Wall engine processes camera frames for tracking. Its post-camera network
   behaviour has **not** been verified, so the paired page makes no zero-telemetry or no-transfer
@@ -398,6 +424,8 @@ Local, repository and browser checks (not paired acceptance):
 | Full-page integrated view and framing check (historical marker page) | **20/20 pass.** This recorded the previous marker page before the W3 world-tracking switch. Production React page, controller and scene at 390×844 and 320×568 in both views, with mocked REST/auth and a fixed test camera at anchor +Z 4.5, FOV 50. Oblique was the default; Top/Oblique toggled the world pitch, made zero RPC calls and left readiness/revision unchanged; tracking-lost disabled Rotate/Return but kept the view control safe; restart and ordinary state refresh kept Top; an SPA session change reset to Oblique; no horizontal overflow or console errors. All 14 target positions (28 marker/backing meshes), all four placed pieces and a 5×5 sample of the authoritative water rectangle were inside the canvas and unblocked by UI at both sizes. |
 | World-tracking paired page integration (W3) | **87/87 synthetic checks pass.** Actual production `BreakWavesPage`, `BreakWavesWorldAr`, W1 floor scene and real vendored Three.js in Chromium, with mocked existing auth/match/backend records and a fake 8th Wall engine; no real data mutation. Checked QR-open/scanner release and no auto-start, preparing/Start, placing, placed, tracking-lost/paused/stopped, reload-gated cancel, unavailable/denied/failed diagnostics, saved pieces/lens/result recovery, zero RPCs for initial placement, size and Re-place, unchanged edit/Ready payloads and revision/readiness, successful acknowledgement with the camera off, UI taps not becoming puzzle taps, and 390×844, 320×568 and 844×390 layouts with screenshots. This is not real-camera, iPhone, two-phone or post-camera network evidence. |
 | W3 review correction: result controls, lost attribution, usable framing | **59/59 focused synthetic checks pass.** Actual page/controller/W1 scene and real Three r160 with fake engine and mocked records. Verified compact Stop/Re-place/size and attribution inside both failed and passed results while tracking, recovery/attribution with the camera off, attribution on the tracking-limited card, single visible size-slider id, zero RPC/revision changes from result local controls, ordinary tracking-loss recovery reusing the same anchor without a fresh placement, and a real unobscured left camera region in the short-landscape side dock. Geometry projections plus tracked screenshots at 100% and a practical floor placement kept the water rectangle, all 14 target points, four saved pieces and lighthouse visible/unblocked at 390×844, 320×568 and 844×390. The screenshot fixture used the accepted initial floor-facing camera pose with a practical farther floor placement, not a forced camera/orbit/puzzle transform; a canvas-frame capture workaround handled headless WebGL compositing. This is not phone tracking. |
+| Build-sheet pull handle and snapping | **138/138 synthetic checks pass.** Actual production `dist/` in Chromium 155.0.8059.12 (Playwright) with mocked Supabase REST/auth, a fake 8th Wall engine, real vendored Three.js and synthetic pointer/touch input. Both the canonical card entry and the separate testing entry reached Start without auto-start, then required an explicit Start, a floor tap and only then showed the build sheet. At 390×844, 320×568 and 844×390 the default/current, collapsed and expanded heights, right-dock layout, 44 px handle and grip, ARIA toggle, body-only scrolling, keyboard/tap alternatives, pointer capture, small/cancelled drags and the dragged-click suppression were checked. Sheet motion and resize made zero RPCs, leaked no canvas taps and left the revision, readiness, island size and anchor unchanged; the lens, piece cards and size slider still worked. Screenshots `01`–`04` for each viewport are in `%TEMP%/agents/break-waves-sheet/`; raw log and structured results are there too. This is synthetic browser evidence, not iPhone/touch-hardware or real-camera tracking. |
+| QR-first page-local entry correction | **89/89 synthetic checks pass.** Production `dist/` in Chromium 155.0.8059.12 (Playwright) at 390×844 with mocked Supabase REST/auth, a fake 8th Wall engine and synthetic canvas-camera QR frames. Direct unopened and already-open trails, plus a partner `opened_at` resync, kept Start and AR off; a saved passing result stayed visible and acknowledgeable with Start gated, including after reload. The canonical external link and in-app correct QR each used only `open_break_waves_stop`, granted entry after the explicit action and still required a separate Start click. Wrong QR, a closed scanner with a pending RPC, failed external/scanner RPC, test-button failure and a stale session-A RPC after switching to session B granted nothing. Test-button retry/success worked without a data reset; scanner tracks ended before Start; zero unrelated puzzle RPCs were called. Raw run: `%TEMP%/agents/break-waves-qr-entry/` (`check-entry-preview.log`, `results.json`, screenshots). This is not an iPhone, real camera or real printed-card scan. |
 | Synthetic camera lifecycle smoke (historical marker page) | Delayed `getUserMedia` cancel released the late track; two start/background cycles ended both tracks, removed video/canvas and removed 2 of 2 captured MindAR resize listeners. SPA navigation ended the live track. Synthetic camera, **not** a phone or paired acceptance. |
 | Focused mocked route-lifecycle check | A delayed session-A parent load was superseded by a session-B legacy page and did not restore the A hunt page after 1.8 s. Starting the synthetic AR camera on A, then making the same in-app route change to B, left the B board visible and showed A's captured track as `ended` with no video/canvas left. Mocked REST/browser evidence, **not** real paired networking or RLS. |
 | Mocked REST render of the hunt screen | Start, scanning, failure result, success result and not-built clue layouts checked at 390×844; start and live build layouts also checked at 320×568, with no horizontal overflow. **Not** an RLS, database, realtime or two-account pass. |
@@ -517,15 +545,24 @@ matched pair**. Do not use an existing legacy pair for this test.
 
 1. Both open the conversation, enter the trail lobby, and mark ready. Confirm both arrive at the
    Break the waves scan screen, not the old problem board.
-2. Print the hunt card from the card page. Both scan it (phone camera or in-app scanner). Confirm
-   each sees the stop and the same goal. Confirm the scanner closes and releases its camera before
-   the Start camera action is available, and that AR does not start automatically.
+2. Print the hunt card from the card page. On each phone scan it (phone camera or in-app scanner).
+   Before entry, confirm that a direct trail visit or reload still shows the scan/testing choice, and
+   that a stop already opened by the partner still shows it too. Confirm each phone needs its own
+   entry and that the visible **Place without QR (testing)** option is separate and clearly labelled
+   as testing. Confirm each scan opens only that phone and that each sees the stop and the same goal.
+   Confirm the scanner closes and releases its camera before the Start camera action is available,
+   and that AR does not start automatically.
 3. Tap **Start camera** on both and allow camera plus motion access. Stand over a textured floor
    with cracks, gravel, grass or a patterned rug; keep tables out of view. Move slowly until normal
    tracking appears, then tap the floor once. Confirm the first tap places the coast and does not
    place a piece. Judge the authoritative water rectangle, target line and accepted pieces rather
    than the decorative outer island edge. At 390×844 and 320×568 keep an accessible floor-tap area
-   above the build sheet. Confirm at least 44 px touch controls.
+   above the build sheet. Confirm at least 44 px touch controls. On the build sheet, drag the pull
+   handle up and down and confirm the collapsed, current and expanded snaps; scroll the sheet body
+   and confirm the handle stays fixed and reachable. Confirm a tap, Enter/Space or ArrowUp/ArrowDown
+   also changes the snap, that a small or cancelled drag changes nothing, and that dragging never
+   selects a piece or starts a placement. Repeat in landscape and confirm the right dock keeps a
+   visible handle and usable controls without covering the left camera region.
 4. Move Island size through 50%, 100% and 200% on each phone. Confirm the percentage updates, the
    island stays on the floor at the same X/Z and facing, and no RPC/revision/ready change occurs.
    Tap **Re-place coast**; confirm the old anchor and any draft ghost disappear, accepted pieces and
@@ -555,9 +592,10 @@ matched pair**. Do not use an existing legacy pair for this test.
     turns off and the app shows the stopped/paused state. Return and press Start camera again;
     confirm the saved revision and island size are retained but a fresh floor placement is required.
     Press Stop camera while the saved result is visible and confirm the result offers Start camera
-    again rather than hiding recovery. Navigate away and back; confirm no camera or engine session
-    remains active. Start a genuinely new trail session and confirm it begins at 100% rather than
-    inheriting the previous size or placement.
+    again rather than hiding recovery while this page's entry remains. Navigate away and back;
+    confirm no camera or engine session remains active and direct re-entry asks for the scan/testing
+    choice before Start. Start a genuinely new trail session and confirm it begins at 100% rather
+    than inheriting the previous size or placement.
 11. Third-account denial: with a third signed-in account that is not in the pair, open
     `/trail/<session-id>` and `/scan/break-the-waves`. Confirm neither loads the stop nor writes
     progress. With a legacy active account, scan the hunt card and confirm it is refused as the

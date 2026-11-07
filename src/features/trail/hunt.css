@@ -313,12 +313,77 @@
   box-shadow: 0 -8px 32px rgb(20 51 47 / 16%);
 }
 
+/* The build sheet is a bounded snap sheet. Its handle stays outside the scrolling body so a
+   scrolled control list cannot move the drag target away from the top edge. */
+.hunt-sheet.hunt-sheet--build {
+  --hunt-sheet-default-height: 43dvh;
+  --hunt-sheet-collapsed-height: 28dvh;
+  --hunt-sheet-expanded-height: 82dvh;
+  display: flex;
+  flex-direction: column;
+  height: var(--hunt-sheet-default-height);
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  transition: height 180ms ease;
+}
+
+.hunt-sheet.hunt-sheet--build[data-snap='collapsed'] {
+  height: var(--hunt-sheet-collapsed-height);
+}
+
+.hunt-sheet.hunt-sheet--build[data-snap='expanded'] {
+  height: var(--hunt-sheet-expanded-height);
+}
+
 .hunt-sheet__handle {
-  width: 2rem;
-  height: 0.2rem;
-  margin: 0 auto 0.55rem;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: max(44px, 2.75rem);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: transparent;
+  color: inherit;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hunt-sheet.hunt-sheet--build[data-dragging='true'] .hunt-sheet__handle {
+  cursor: grabbing;
+}
+
+.hunt-sheet__grip {
+  width: 2.75rem;
+  height: 0.25rem;
   border-radius: 1rem;
-  background: #d8d4ca;
+  background: #cfc9bd;
+}
+
+.hunt-sheet__handle:focus-visible {
+  outline-offset: -3px;
+}
+
+.hunt-sheet__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 1rem calc(0.9rem + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hunt-sheet.hunt-sheet--build {
+    transition: none;
+  }
 }
 
 .hunt-lens {
@@ -820,10 +885,6 @@
     padding-bottom: calc(0.2rem + env(safe-area-inset-bottom));
   }
 
-  .hunt-sheet__handle {
-    display: none;
-  }
-
   .hunt-sheet__head {
     margin-top: 0.2rem;
     margin-bottom: 0.15rem;
@@ -1063,8 +1124,8 @@
   color: #ffe9a8;
 }
 
-/* Keep a real camera/puzzle region above the build sheet on portrait phones. */
-.hunt-sheet:not(.hunt-result) {
+/* Keep a real camera/puzzle region above the fixed-height build sheet on portrait phones. */
+.hunt-sheet:not(.hunt-result):not(.hunt-sheet--build) {
   max-height: 43dvh;
 }
 
@@ -1156,8 +1217,27 @@
     box-shadow: -8px 0 28px rgb(20 51 47 / 16%);
   }
 
-  .hunt-sheet__handle {
-    display: none;
+  .hunt-sheet.hunt-sheet--build {
+    top: auto;
+    bottom: 0;
+    height: calc(100dvh - 8rem - env(safe-area-inset-top));
+    max-height: none;
+  }
+
+  .hunt-sheet.hunt-sheet--build[data-snap='collapsed'] {
+    height: 46dvh;
+  }
+
+  .hunt-sheet.hunt-sheet--build[data-snap='expanded'] {
+    height: calc(100dvh - 4.25rem - env(safe-area-inset-top));
+  }
+
+  .hunt-sheet--build .hunt-sheet__handle {
+    border-radius: 1.1rem 0 0 0;
+  }
+
+  .hunt-sheet--build .hunt-sheet__body {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .hunt-result__actions {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/AuthProvider'
+import { breakWavesScanReceipt } from './breakWavesEntry'
 
 type State =
   | { status: 'working' }
@@ -59,7 +60,9 @@ export function HuntScanEntry() {
     }
   }, [open, attempt])
 
-  if (state.status === 'done') return <Navigate to={`/trail/${state.sessionId}`} replace />
+  if (state.status === 'done') {
+    return <Navigate to={`/trail/${state.sessionId}`} replace state={breakWavesScanReceipt(state.sessionId)} />
+  }
   if (state.status === 'working') return <p className="screen muted">Opening Break the waves…</p>
 
   return (
