@@ -2,10 +2,11 @@
 
 Break the waves is stop 1 of the paired hunt. It is separate from the earlier standalone AR
 experiment and from the legacy problem-board trail. Two matched players mark ready in the existing
-lobby, scan the same printed card, enter marker AR on their own phones, place and rotate only their
-own two breakwater pieces, and test the shared accepted layout. The database evaluates the layout.
-Both players acknowledge the same successful revision to reveal the next clue. Higher ground is
-shown as **not built yet**; no later stop is simulated or unlocked.
+lobby, scan the same printed card, place the shared coast on a textured floor with world tracking on
+their own phones, place and rotate only their own two breakwater pieces, and test the shared
+accepted layout. The database evaluates the layout. Both players acknowledge the same successful
+revision to reveal the next clue. Higher ground is shown as **not built yet**; no later stop is
+simulated or unlocked.
 
 ## Entry points and routes
 
@@ -31,7 +32,7 @@ session.
 The model is an illustrative teaching model, not engineering advice. Breakwaters reduce wave
 energy; they do not stop flooding from higher sea levels.
 
-- Marker-local water is `x = -0.44..0.44`, `z = -0.08..0.28`. The coast front is at `z = -0.20`.
+- Scene-local water is `x = -0.44..0.44`, `z = -0.08..0.28`. The coast front is at `z = -0.20`.
   Waves travel towards negative z.
 - Each player owns two pieces, `A1/A2` or `B1/B2` by stable match participant. Each piece is
   `0.18` long and `0.03` wide. Centres snap to `0.01`; rotations snap to 15°.
@@ -87,21 +88,84 @@ The additive migration is
 
 ## AR and UI
 
-The app still uses the pinned local MindAR 1.2.5 and Three.js 0.160.0 files under
-`public/ar/vendor/`, and the compiled `public/ar/targets/coastal-target.mind`. `index.html` now has
-the import map those vendor modules need. No CDN or new engine is used.
+The paired stop now uses the local vendored 8th Wall 1.0.0 engine and Three.js 0.160 module through
+`src/features/trail/breakWavesWorldAr.ts`. It does not use MindAR or `coastal-target.mind`. The
+earlier standalone experiment (`/ar.html`), diorama and card helper still use the pinned local
+MindAR 1.2.5 and Three.js 0.160.0 files under `public/ar/vendor/`, plus the compiled
+`public/ar/targets/coastal-target.mind`; those assets and the import map are unchanged. No CDN or
+additional engine is used by the paired page.
 
-- The QR scanner is unmounted before the AR controller starts. The AR controller owns the rear
-  camera while it runs. Navigation, page hide, backgrounding, cancel and startup failure release
-  the stream, MindAR worker/controller and renderer.
-- Tracking loss disables construction and shows a recovery message. Saved construction is fetched
-  from the database and is not lost when the camera stops. A view choice remains a safe
-  presentation-only control while tracking is lost, because construction is already disabled.
-- Both phones show the same shared lighthouse-island diorama on the marker: the lighthouse, coast,
-  surf, boats and breakwater rock ridges. The shared model is scaled by `1 / PUZZLE_SCALE` (1/2.7) so
-  puzzle coordinates stay the scene's local coordinates; the whole world is then scaled 1.35× and
-  tilted 25° for the default Oblique view. This is presentation only: the world stays centred on the
-  marker, and puzzle coordinates, pointer-to-local conversion and saved layouts are unchanged.
+- The QR scanner is not the AR camera. Before the page opens the scanner it stops and releases the
+  world-tracking controller; the scanner unmounts and releases its own tracks before Start is
+  available again. The controller owns the rear camera while it runs. Navigation, page hide,
+  backgrounding, Stop, cancel and startup failure release the stream, scene and engine session.
+- Tracking loss hides the coast, disables construction and shows a recovery message. Saved
+  construction is fetched from the database and is not lost when the camera stops. Normal tracking
+  recovery deliberately restores the same valid anchor, yaw and accepted pieces; it does **not**
+  require a fresh placement. The page offers Re-place and Stop while tracking is limited; Re-place
+  clears only the local anchor and ghost, and a fresh placement is required only after that explicit
+  local reset, Stop/restart or a new session.
+- Both phones show the same shared lighthouse-island diorama on the estimated floor: the
+  lighthouse, coast, surf, boats and breakwater rock ridges. The shared model is scaled by
+  `1 / PUZZLE_SCALE` (1/2.7) so puzzle coordinates stay the scene's local coordinates; the caller's
+  floor anchor then owns translation, yaw, physical scale and floor lift. Puzzle coordinates,
+  pointer-to-local conversion and saved layouts are unchanged.
+- `createBreakWavesScene` keeps `registration: 'marker'` for the standalone marker experiment and
+  uses the opt-in `registration: 'floor'` mode for the paired page. Floor registration leaves the
+  logical scene root at unit scale with zero rotation. A parent scale of `0.24 × PUZZLE_SCALE`
+  therefore produces the accepted 0.24 model scale through the same single inverse
+  `PUZZLE_SCALE` model transform. `setView` remains a marker presentation tilt and cannot pitch a
+  floor-registered scene. Three.js light positions follow the parent transform, but point-light
+  distance and directional-shadow camera extent are world-space values; the floor mode updates
+  those (and the shadow normal bias) from the parent's uniform world scale so lighting and shadow
+  coverage follow live size changes.
+- `src/features/trail/breakWavesWorldAr.ts` is the paired page's live world-tracking controller.
+  The controller prepares the local Three.js/8th Wall SDK without requesting the camera, caches the
+  real `xrloaded` readiness across controller and route replacement, and calls `XR8.run()`
+  synchronously from Start. Unsupported desktop devices show an unavailable state without opening
+  the camera. Its state callback reports `preparing`, `ready`, `starting`, `placing`, `tracking`,
+  `tracking-lost`, `paused`, `stopped`, `denied`, `unavailable` or `failed`, with `canStart`,
+  `reloadRequired`, `message` and `sizePercent`; only `tracking` (normal tracking plus placement) is
+  playable. It queues pieces, wave layout, selection, ghost, lens and evaluation on creation and on
+  updates. The game scene is interactive only after normal tracking and a successful floor
+  placement. That placement tap is consumed in capture phase so the same tap cannot also select or
+  build. Size keeps the anchor X/Z, yaw and floor lift, and a completed stop can restart with the
+  size retained but needs fresh placement. A completed stop applies the accepted 450 ms shared SDK
+  settle guard before Start is enabled again; the guard is page-global so a replacement controller
+  waits too, while the timer never clears the permanent reload gate for an interrupted startup.
+  Startup interrupted before `onStart` requires a page reload, and that gate plus the SDK-ready cache
+  survives controller replacement. The controller adds no sample Exposed/Protected state and no
+  independent render loop; the 8th Wall Three.js pipeline owns drawing, projection and camera
+  cropping.
+- The paired page mounts that controller once for the active side/stop and session id. Ordinary
+  partner, piece, result, lens and pending-action updates are queued into the live controller, not
+  used to recreate it. A clue/session transition disposes it, and opening the QR scanner first stops
+  the AR session. Edit and Ready handlers also check the live controller phase, so a same-event
+  tracking loss or Re-place cannot let React's older phase permit a mutation.
+- The page replaces marker view controls with a native **Island size** slider (50–200% in 5% steps,
+  with a percentage output) and **Re-place coast**. Both are local presentation/placement controls:
+  they make no RPC, do not reload, and do not change accepted pieces, readiness or the saved
+  revision. Size is retained across Stop/Start; a new controller or page starts at 100%. Re-place
+  clears the local anchor and any draft ghost only. The phone's motion supplies perspective; there
+  is no Oblique/Top fixed-view mode in the paired page.
+- The camera UI shows engine preparation (Start disabled), an explicit Start when prepared,
+  Cancel start/Stop camera, floor-placement instructions before the coast is placed, tracking-loss
+  recovery, and denied/unavailable/failed diagnostics. Reload is surfaced whenever the controller
+  requires it. While a saved result is on screen, the result keeps local camera controls and the
+  8th Wall attribution visible. When already tracking it shows compact Stop/Re-place/size controls;
+  when not tracking it shows the appropriate Start/Reload/recovery controls. The tracking-limited
+  recovery card also keeps the attribution/licence available. Acknowledging a successful result
+  remains available with the camera off.
+- The tracking build sheet is height-bounded on portrait phones so the authoritative water,
+  targets and placed pieces remain above it at 390×844 and 320×568. In short landscape the build,
+  placement and result sheets become a bounded, scrollable right-side dock; the camera/puzzle
+  region on the left stays unobscured instead of being reduced to a thin strip.
+- The app stores no camera frames or poses and adds no recording, upload or analytics service of
+  its own. The local 8th Wall engine processes camera frames for tracking. Its post-camera network
+  behaviour has **not** been verified, so the paired page makes no zero-telemetry or no-transfer
+  claim. A real phone/network check is still required. The visible attribution links to the local,
+  unmodified 8th Wall `LICENSE` and states that the engine is proprietary, provided AS IS, without
+  warranties and without endorsement. This is not a legal-compliance conclusion.
 - Scene breakwaters are rock ridges kept inside the exact authoritative piece footprint. Accepted
   pieces use quieter owner-tinted accents and a selected-piece outline rather than text labels in
   the scene. The piece cards, owner swatches and sheet text still identify `A1`, `A2`, `B1` and `B2`
@@ -109,18 +173,10 @@ the import map those vendor modules need. No CDN or new engine is used.
 - Player A can toggle a wave/risk lens; player B can toggle a seabed/boat-corridor lens. The seabed
   lens shows the exact buildable-water rectangle and a distinct central boat corridor, so the
   buildable area is not confused with the larger decorative sea. Both can inspect and build.
-- The presentation starts in **Oblique**. A compact **View · Oblique / Top** control appears while
-  the camera is running (including tracking-lost, when construction is disabled). The choice is
-  local UI state: it is queued on the AR controller before scene creation and reapplied after a
-  camera stop, restart or tracking recovery. It is not a game mutation and does not change readiness,
-  the saved revision or piece positions. It resets to Oblique at an actual session boundary; an
-  ordinary saved-state refresh preserves the player's current view.
-- The control copy and help sheet say that the choice tilts the miniature on the marker. Moving the
-  phone still changes the real perspective; **Top is not a fixed-camera-angle guarantee**. This does
-  not add an orbit/viewer mode or bypass marker AR.
-- The reliable baseline is: select one of your own piece cards, tap the water, then use Rotate 15°
-  or Return. A tapped draft ghost and a "saving" note are unconfirmed; only the database-returned
-  accepted revision is shown as placed.
+- The reliable baseline is: place the coast on the floor with the first tap, then select one of
+  your own piece cards, tap the water, then use Rotate 15° or Return. A tapped draft ghost and a
+  "saving" note are unconfirmed; only the database-returned accepted revision is shown as placed.
+  Island size and Re-place never count as puzzle edits.
 - The animated water uses the same piece-centreline shelter geometry as the server result. After a
   test, the saved tested layout for that revision drives the wave field and target/boat feedback, so
   the animation cannot disagree with the stored result.
@@ -129,25 +185,25 @@ the import map those vendor modules need. No CDN or new engine is used.
   coastal takeaway. Both players press Continue to unlock the clue.
 - The clue screen names Higher ground and says clearly that stop 2 is not built yet.
 
-### Tracking-stability experiment
+### Historical marker tracking-stability experiment
 
-The paired hunt temporarily sets MindAR's `filterBeta` to `10` instead of the pinned default
-`1000`. The minimum cutoff (`0.001`) and warmup/miss tolerances (5 tracking updates each) remain
-unchanged. This tunes the existing pose filter only; it does not freeze the miniature, change the
-camera or keep construction enabled after tracking loss. The standalone experiment is unchanged.
+The paired page no longer mounts MindAR, so this is no longer the live hunt path. It is retained as
+a record of the previous marker controller experiment: the paired hunt temporarily set MindAR's
+`filterBeta` to `10` instead of the pinned default `1000`, while the minimum cutoff (`0.001`) and
+warmup/miss tolerances remained unchanged. It tuned the pose filter only and did not freeze the
+miniature, change the camera or keep construction enabled after tracking loss. The standalone
+experiment remains unchanged and does not use this paired-page setting.
 
-This is a phone-test experiment, not a proven jitter fix. Lower adaptive responsiveness can add lag
-while moving the phone. Compare gentle stationary holding, slow sideways motion and return to rest
-at the same marker/distance, then briefly hide and reacquire the marker. Check both jitter and lag,
-that tracking loss still disables construction and that saved pieces recover. Do not infer success
-from synthetic filter output. The Oblique orientation and close-view clipping issues remain separate.
-Revert by removing the explicit `filterBeta` option, restoring the pinned library default.
+This was never a proven jitter fix. Do not infer current world-tracking quality from that filter
+output. Marker jitter/lag and close-view clipping were separate historical issues and are not part
+of the paired world-tracking acceptance.
 
 ## World-tracking feasibility experiment
 
-`/world.html` is a separate feasibility experiment, not a migration of the paired game. It is not
-linked from the hunt card, does not use MindAR or `coastal-target.mind`, and does not call the app,
-Supabase or the backend. The approved lighthouse-island model comes from
+`/world.html` is a separate feasibility experiment, not a migration of the paired game. The paired
+stop now uses the related `BreakWavesWorldAr` controller, but `/world.html` remains isolated. It is
+not linked from the hunt card, does not use MindAR or `coastal-target.mind`, and does not call the
+app, Supabase or the backend. The approved lighthouse-island model comes from
 `createLighthouseDiorama` in `src/diorama/dioramaModel.ts`; the page owns only the AR lifecycle,
 floor placement, status UI and local example state. There is no account, save, sync, page-level
 analytics call, real puzzle progression or authoritative layout write.
@@ -309,8 +365,8 @@ for the approved island and does not upgrade.
   creation or artificial completion was performed on the shared data. Existing legacy rows remain
   legacy. The same shared development backend intentionally serves both site versions; this is a
   development trade-off, not a production compatibility gate.
-- Hosted JWT verification, PostgREST request handling, Realtime delivery and iPhone camera/marker
-  behaviour are not proven by the local PostgreSQL role checks. A branch preview is produced from
+- Hosted JWT verification, PostgREST request handling, Realtime delivery and iPhone camera/world-
+  tracking behaviour are not proven by the local PostgreSQL role checks. A branch preview is produced from
   the `ar-scavenger-demo` branch only; `main` is not merged or changed.
 - The local verification used a minimal auth/role shim, not production GoTrue: `anon` and
   `authenticated` roles, `auth.users(id)`, `auth.uid()` reading
@@ -338,9 +394,11 @@ Local, repository and browser checks (not paired acceptance):
 | Challenge helper probes against `src/features/trail/breakWaves.ts` | Pass for failing one-sided layout, two genuinely different four-piece passing layouts, rotated vertical exposure, boat blockage, out-of-water, overlap and two-piece insufficiency. |
 | `git diff --check` on authored files | Exit 0, including the view integration and docs updates. Vendor files unchanged. |
 | Chromium on `dist/` via `npm run preview` | Card variant, pinned import map, local vendor imports and phone-width layout checked. |
-| Focused controller view queuing/restart check | **12/12 pass.** Production `BreakWavesAr` and `BreakWavesScene` with a test-only MindAR vendor and synthetic fixed camera/anchor. Top set before first scene creation applied immediately; tracking loss/recovery kept it; pause disposed the anchor scene while retaining the queued view; restarts reapplied Oblique/Top and restored all four saved pieces and the wave lens; no console/page errors. Mocked camera, not phone evidence. |
-| Full-page integrated view and framing check | **20/20 pass.** Production React page, controller and scene at 390×844 and 320×568 in both views, with mocked REST/auth and a fixed test camera at anchor +Z 4.5, FOV 50. Oblique was the default; Top/Oblique toggled the world pitch, made zero RPC calls and left readiness/revision unchanged; tracking-lost disabled Rotate/Return but kept the view control safe; restart and ordinary state refresh kept Top; an SPA session change reset to Oblique; no horizontal overflow or console errors. All 14 target positions (28 marker/backing meshes), all four placed pieces and a 5×5 sample of the authoritative water rectangle were inside the canvas and unblocked by UI at both sizes. |
-| Synthetic camera lifecycle smoke | Delayed `getUserMedia` cancel released the late track; two start/background cycles ended both tracks, removed video/canvas and removed 2 of 2 captured MindAR resize listeners. SPA navigation ended the live track. Synthetic camera, **not** a phone or paired acceptance. |
+| Focused controller view queuing/restart check (historical marker page) | **12/12 pass.** Production `BreakWavesAr` and `BreakWavesScene` with a test-only MindAR vendor and synthetic fixed camera/anchor. Top set before first scene creation applied immediately; tracking loss/recovery kept it; pause disposed the anchor scene while retaining the queued view; restarts reapplied Oblique/Top and restored all four saved pieces and the wave lens; no console/page errors. Mocked camera, not phone evidence. |
+| Full-page integrated view and framing check (historical marker page) | **20/20 pass.** This recorded the previous marker page before the W3 world-tracking switch. Production React page, controller and scene at 390×844 and 320×568 in both views, with mocked REST/auth and a fixed test camera at anchor +Z 4.5, FOV 50. Oblique was the default; Top/Oblique toggled the world pitch, made zero RPC calls and left readiness/revision unchanged; tracking-lost disabled Rotate/Return but kept the view control safe; restart and ordinary state refresh kept Top; an SPA session change reset to Oblique; no horizontal overflow or console errors. All 14 target positions (28 marker/backing meshes), all four placed pieces and a 5×5 sample of the authoritative water rectangle were inside the canvas and unblocked by UI at both sizes. |
+| World-tracking paired page integration (W3) | **87/87 synthetic checks pass.** Actual production `BreakWavesPage`, `BreakWavesWorldAr`, W1 floor scene and real vendored Three.js in Chromium, with mocked existing auth/match/backend records and a fake 8th Wall engine; no real data mutation. Checked QR-open/scanner release and no auto-start, preparing/Start, placing, placed, tracking-lost/paused/stopped, reload-gated cancel, unavailable/denied/failed diagnostics, saved pieces/lens/result recovery, zero RPCs for initial placement, size and Re-place, unchanged edit/Ready payloads and revision/readiness, successful acknowledgement with the camera off, UI taps not becoming puzzle taps, and 390×844, 320×568 and 844×390 layouts with screenshots. This is not real-camera, iPhone, two-phone or post-camera network evidence. |
+| W3 review correction: result controls, lost attribution, usable framing | **59/59 focused synthetic checks pass.** Actual page/controller/W1 scene and real Three r160 with fake engine and mocked records. Verified compact Stop/Re-place/size and attribution inside both failed and passed results while tracking, recovery/attribution with the camera off, attribution on the tracking-limited card, single visible size-slider id, zero RPC/revision changes from result local controls, ordinary tracking-loss recovery reusing the same anchor without a fresh placement, and a real unobscured left camera region in the short-landscape side dock. Geometry projections plus tracked screenshots at 100% and a practical floor placement kept the water rectangle, all 14 target points, four saved pieces and lighthouse visible/unblocked at 390×844, 320×568 and 844×390. The screenshot fixture used the accepted initial floor-facing camera pose with a practical farther floor placement, not a forced camera/orbit/puzzle transform; a canvas-frame capture workaround handled headless WebGL compositing. This is not phone tracking. |
+| Synthetic camera lifecycle smoke (historical marker page) | Delayed `getUserMedia` cancel released the late track; two start/background cycles ended both tracks, removed video/canvas and removed 2 of 2 captured MindAR resize listeners. SPA navigation ended the live track. Synthetic camera, **not** a phone or paired acceptance. |
 | Focused mocked route-lifecycle check | A delayed session-A parent load was superseded by a session-B legacy page and did not restore the A hunt page after 1.8 s. Starting the synthetic AR camera on A, then making the same in-app route change to B, left the B board visible and showed A's captured track as `ended` with no video/canvas left. Mocked REST/browser evidence, **not** real paired networking or RLS. |
 | Mocked REST render of the hunt screen | Start, scanning, failure result, success result and not-built clue layouts checked at 390×844; start and live build layouts also checked at 320×568, with no horizontal overflow. **Not** an RLS, database, realtime or two-account pass. |
 | Historical: local presentation-sizing harness (before the shared diorama) | This measured the earlier simplified scene, not the current integrated framing. At a synthetic marker pose, the sea, target line and piece projections were about 1.5× their former size; water taps returned the same local coordinates before and after, and a piece tap selected `a1`. **Not** real marker tracking or phone acceptance and not evidence for the current diorama's outer-art clipping. |
@@ -352,7 +410,7 @@ Local, repository and browser checks (not paired acceptance):
 | Hosted shared migration application | **Pass.** `npx supabase migration list --linked` showed exactly `20261026170000` pending; `npx supabase db push --linked --dry-run` predicted exactly that one migration; `npx supabase db push --linked --yes --skip-vault` exited 0; a second migration-list check showed local = remote = `20261026170000`. A read-only hosted query showed one legacy session, zero hunt sessions, zero hunt progress rows, both new tables RLS-enabled and progress in `supabase_realtime`. |
 | Hosted branch preview | Cloudflare Pages build for branch `ar-scavenger-demo` only; expected host `https://ar-scavenger-demo.sip-coastaldatingapp.pages.dev`. Deployment/entry/asset verification is recorded in the rollout return, not assumed here. |
 | Supabase JWT/PostgREST/Realtime delivery | **NOT RUN.** The PostgreSQL checks used direct SQL role claims, not the hosted stack. |
-| Real two-iPhone marker tracking and paired game | **NOT RUN**. |
+| Real two-phone world-tracking paired game | **NOT RUN.** |
 
 Captured counters:
 
@@ -460,23 +518,28 @@ matched pair**. Do not use an existing legacy pair for this test.
 1. Both open the conversation, enter the trail lobby, and mark ready. Confirm both arrive at the
    Break the waves scan screen, not the old problem board.
 2. Print the hunt card from the card page. Both scan it (phone camera or in-app scanner). Confirm
-   each sees the stop and the same goal. Confirm the scanner camera closes before AR starts.
-3. Tap **Start AR camera** on both. Allow the rear camera. Point at the printed illustration.
-   Confirm real marker tracking on both phones. The shared diorama should be visibly larger and
-   readable without zooming or panning. Judge the authoritative water rectangle, target line and
-   accepted pieces rather than the decorative outer island edge: at a close, phone-like aim the
-   outer art can leave the frame even when the playable water is visible. At 390×844 and 320×568
-   the target line and water remain usable at a natural aim above the build sheet. Confirm at least
-   44 px touch controls.
-4. Confirm the stop starts in **Oblique**. Tap **Top**, then return to **Oblique**. Confirm the
-   miniature tilts on the marker while the live camera keeps moving behind it, and that the note says
-   moving the phone still changes perspective. Confirm A sees the wave/risk lens and B sees the
-   seabed/boat-corridor lens, including the exact buildable-water boundary. Toggle each. Confirm both
-   can still inspect and select only their own two piece cards.
+   each sees the stop and the same goal. Confirm the scanner closes and releases its camera before
+   the Start camera action is available, and that AR does not start automatically.
+3. Tap **Start camera** on both and allow camera plus motion access. Stand over a textured floor
+   with cracks, gravel, grass or a patterned rug; keep tables out of view. Move slowly until normal
+   tracking appears, then tap the floor once. Confirm the first tap places the coast and does not
+   place a piece. Judge the authoritative water rectangle, target line and accepted pieces rather
+   than the decorative outer island edge. At 390×844 and 320×568 keep an accessible floor-tap area
+   above the build sheet. Confirm at least 44 px touch controls.
+4. Move Island size through 50%, 100% and 200% on each phone. Confirm the percentage updates, the
+   island stays on the floor at the same X/Z and facing, and no RPC/revision/ready change occurs.
+   Tap **Re-place coast**; confirm the old anchor and any draft ghost disappear, accepted pieces and
+   both ready checks stay unchanged, and the next floor tap places the coast again. Confirm moving
+   the phone changes perspective and there is no Oblique/Top fixed-view control. Confirm A sees the
+   wave/risk lens and B sees the seabed/boat-corridor lens, including the exact buildable-water
+   boundary. Toggle each. Confirm both can still inspect and select only their own two piece cards.
 5. Place one of A's pieces, then rotate it and move it. Confirm B sees the accepted piece's quiet
    owner accent, exact footprint and revision change. Repeat from B. Confirm there are no text labels
-   on scene pieces. Confirm tapping a piece does nothing while the card is lost, and returning to the
-   card restores the saved layout and the selected view.
+   on scene pieces. Hide the floor or cover the camera until tracking is limited; confirm the coast
+   is hidden, construction is disabled, Re-place/Stop are available, and no tap becomes a game edit.
+   Recover normal tracking and confirm the same anchor, yaw, saved layout and construction return;
+   ordinary tracking loss must not require a fresh placement. Fresh placement is required only after
+   an explicit Re-place, Stop/restart or a new session.
 6. Mark both ready with a deliberately one-sided or boat-blocking layout. Confirm exactly one
    authoritative result appears on both phones, with specific west/east/boat counts, and both ready
    checks are cleared. Confirm accepted pieces remain placed.
@@ -488,10 +551,13 @@ matched pair**. Do not use an existing legacy pair for this test.
 9. Press Continue on one phone. Confirm the other still needs to continue and the clue does not
    appear yet. Press Continue on the second. Confirm both see the Higher ground clue and the clear
    **not built yet** note, with no third card or completion claim.
-10. Select Top, then lock a phone or switch apps during AR. Confirm the camera indicator turns off
-    and the app shows the paused state. Return and start again; confirm the saved revision and Top
-    view are still there. Navigate away and back; confirm no camera or worker remains active. Start a
-    genuinely new trail session and confirm it begins in Oblique rather than inheriting Top.
+10. Press **Stop camera**, or lock a phone or switch apps during AR. Confirm the camera indicator
+    turns off and the app shows the stopped/paused state. Return and press Start camera again;
+    confirm the saved revision and island size are retained but a fresh floor placement is required.
+    Press Stop camera while the saved result is visible and confirm the result offers Start camera
+    again rather than hiding recovery. Navigate away and back; confirm no camera or engine session
+    remains active. Start a genuinely new trail session and confirm it begins at 100% rather than
+    inheriting the previous size or placement.
 11. Third-account denial: with a third signed-in account that is not in the pair, open
     `/trail/<session-id>` and `/scan/break-the-waves`. Confirm neither loads the stop nor writes
     progress. With a legacy active account, scan the hunt card and confirm it is refused as the

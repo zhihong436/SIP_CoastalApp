@@ -1,7 +1,9 @@
 // The marker-relative Break the waves miniature. The shared lighthouse-island diorama supplies the
 // approved scenery and surf; this scene adds the game's exact target line, lenses, construction
 // outlines, ghost and marker-relative picking. Puzzle coordinates stay the world's local coordinates:
-// the shared model is simply scaled by 1 / PUZZLE_SCALE and the whole world takes the local pitch.
+// the shared model is simply scaled by 1 / PUZZLE_SCALE. Marker registration adds the local pitch
+// and presentation scale; floor registration leaves the logical world neutral for a parent that
+// owns physical placement.
 import {
   CORRIDOR_HALF_WIDTH,
   PIECE_LENGTH,
@@ -28,6 +30,7 @@ type Material = any
 
 export type LensId = 'waves' | 'seabed'
 export type SceneView = 'oblique' | 'top'
+export type SceneRegistration = 'marker' | 'floor'
 
 export interface GhostPiece {
   owner: Side
@@ -90,29 +93,42 @@ export function createBreakWavesScene(
   anchorGroup: Object3D,
   renderer: any,
   camera: any,
-  options: { mySide: Side; callbacks: SceneCallbacks },
+  options: { mySide: Side; callbacks: SceneCallbacks; registration?: SceneRegistration },
 ): BreakWavesScene {
   const { mySide, callbacks } = options
+  const registration = options.registration ?? 'marker'
   const reducedMotion =
     typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   const world = new THREE.Group()
-  // The anchor's plane is XY with Z coming out of the card. Rotating makes Y up. The extra local
-  // pitch is presentation only; hit conversion still goes through this same world transform.
-  //
-  // The model's seaward/front direction is local +z. A camera looking at the marker from the
-  // anchor's +Z side must see that water face, not the landward island back. At PI/2 - pitch,
-  // anchor z = model z * sin(pitch), so local +z maps to anchor +Z (the camera side) and local -z
-  // stays on the landward side. PI/2 + pitch would reverse that and show the landward face.
-  world.rotation.x = Math.PI / 2 - OBLIQUE_PITCH
-  world.scale.setScalar(BASE_SCALE)
+  world.name = 'break-waves-world'
+  if (registration === 'marker') {
+    // The anchor's plane is XY with Z coming out of the card. Rotating makes Y up. The extra local
+    // pitch is presentation only; hit conversion still goes through this same world transform.
+    //
+    // The model's seaward/front direction is local +z. A camera looking at the marker from the
+    // anchor's +Z side must see that water face, not the landward island back. At PI/2 - pitch,
+    // anchor z = model z * sin(pitch), so local +z maps to anchor +Z (the camera side) and local -z
+    // stays on the landward side. PI/2 + pitch would reverse that and show the landward face.
+    world.rotation.x = Math.PI / 2 - OBLIQUE_PITCH
+    world.scale.setScalar(BASE_SCALE)
+  } else {
+    // The caller's anchor parent supplies translation, yaw, physical scale and floor lift. Keeping
+    // this root at unit scale and zero rotation makes its local coordinates the exact puzzle frame.
+    world.rotation.set(0, 0, 0)
+    world.scale.setScalar(1)
+  }
   anchorGroup.add(world)
 
   let currentView: SceneView = 'oblique'
   function setView(view: SceneView) {
     currentView = view
-    world.rotation.x = Math.PI / 2 - (currentView === 'oblique' ? OBLIQUE_PITCH : 0)
-    world.updateMatrixWorld(true)
+    // View choice tilts the marker presentation. A floor-registered scene stays floor-neutral; moving
+    // the phone changes the real perspective instead.
+    if (registration === 'marker') {
+      world.rotation.x = Math.PI / 2 - (currentView === 'oblique' ? OBLIQUE_PITCH : 0)
+      world.updateMatrixWorld(true)
+    }
   }
 
   let interactive = false
@@ -175,6 +191,33 @@ export function createBreakWavesScene(
   const lighthouseGlow = new THREE.PointLight(0xffbd68, 1.15, 3.5 / PUZZLE_SCALE, 2)
   lighthouseGlow.position.set(-1.55 / PUZZLE_SCALE, 1.76 / PUZZLE_SCALE, -0.95 / PUZZLE_SCALE)
   world.add(lighthouseGlow)
+
+  // Three scales light positions through matrixWorld, but PointLight.distance and the directional
+  // shadow camera's extent are world-space values. A floor parent can change physical size at any
+  // time, so derive those values from its uniform world scale. The accepted world preview uses
+  // 5.2 * model scale for shadow coverage, 3.5 * model scale for the glow and .012 normal bias at
+  // the marker's 0.5 model scale. Marker registration keeps its existing fixed values untouched.
+  const floorScale = new THREE.Vector3()
+  let syncedFloorScale = 0
+  function syncFloorLights() {
+    if (registration !== 'floor') return
+    const parentScale = Math.abs(anchorGroup.getWorldScale(floorScale).x)
+    if (!Number.isFinite(parentScale) || parentScale <= 0) return
+    if (Math.abs(parentScale - syncedFloorScale) < 1e-6) return
+    syncedFloorScale = parentScale
+    const modelScale = parentScale / PUZZLE_SCALE
+    const shadowExtent = 5.2 * modelScale
+    keyLight.shadow.camera.left = -shadowExtent
+    keyLight.shadow.camera.right = shadowExtent
+    keyLight.shadow.camera.top = shadowExtent
+    keyLight.shadow.camera.bottom = -shadowExtent
+    keyLight.shadow.camera.near = 0.1
+    keyLight.shadow.camera.far = 8
+    keyLight.shadow.camera.updateProjectionMatrix()
+    keyLight.shadow.normalBias = 0.012 * (parentScale / BASE_SCALE)
+    lighthouseGlow.distance = 3.5 * modelScale
+  }
+  syncFloorLights()
 
   // ----- Game overlays ------------------------------------------------------------
   const overlay = new THREE.Group()
@@ -339,6 +382,7 @@ export function createBreakWavesScene(
 
   // ----- Construction overlays ----------------------------------------------------
   let pieceRoot = new THREE.Group()
+  pieceRoot.name = 'piece-overlays'
   overlay.add(pieceRoot)
   let piecePickMeshes: Object3D[] = []
   const pieceVisuals = new Map<string, { outline: Object3D; material: Material }>()
@@ -558,6 +602,7 @@ export function createBreakWavesScene(
   // ----- Animation and disposal ---------------------------------------------------
   function update(timeSeconds: number) {
     if (disposed) return
+    syncFloorLights()
     const visualTime = reducedMotion ? 0 : timeSeconds
     model.update(visualTime, 1)
     if (selectedId !== null) {

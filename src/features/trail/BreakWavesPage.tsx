@@ -5,7 +5,7 @@ import { BackIcon, CheckIcon, QrIcon, WaveIcon } from '../../components/Icons'
 import { supabase } from '../../lib/supabase'
 import { useMatch } from '../chat/useMatch'
 import { HuntCardScanner } from './HuntCardScanner'
-import { BreakWavesAr, type ArPhase } from './breakWavesAr'
+import { BreakWavesWorldAr, type WorldArPhase, type WorldArState } from './breakWavesWorldAr'
 import {
   evaluateBreakWaves,
   failureText,
@@ -15,7 +15,7 @@ import {
   type BreakWavesResult,
   type PieceId,
 } from './breakWaves'
-import type { GhostPiece, LensId, SceneView } from './breakWavesScene'
+import type { GhostPiece, LensId } from './breakWavesScene'
 import { useBreakWaves } from './useBreakWaves'
 
 interface Props {
@@ -50,37 +50,196 @@ function placementError(result: BreakWavesResult) {
   return 'That placement is not valid.'
 }
 
-function phaseCopy(phase: ArPhase): { title: string; body: string } {
+const INITIAL_WORLD_STATE: WorldArState = {
+  phase: 'preparing',
+  canStart: false,
+  reloadRequired: false,
+  message: 'Preparing the world-tracking engine. No camera is requested.',
+  sizePercent: 100,
+}
+
+const licenseUrl = new URL(
+  `${import.meta.env.BASE_URL}ar/vendor/8thwall-engine-1.0.0/LICENSE`,
+  window.location.origin,
+).href
+
+function worldPhaseCopy(phase: WorldArPhase): { title: string; body: string } {
   switch (phase) {
+    case 'preparing':
+      return {
+        title: 'Preparing world tracking',
+        body: 'Loading the local Three.js and 8th Wall engine. No camera is requested until you start.',
+      }
+    case 'ready':
+      return {
+        title: 'Ready to place the coast',
+        body: 'Start the rear camera when you are standing over a textured floor. Keep tables and other horizontal surfaces out of view.',
+      }
     case 'starting':
-      return { title: 'Starting the camera…', body: 'Allow the rear camera when the browser asks. Camera frames stay on this device.' }
-    case 'denied':
       return {
-        title: 'Camera access is blocked',
-        body: 'In Safari, open the aA menu, choose Website Settings, set Camera to Allow, then try again. HTTPS is required on a phone.',
+        title: 'Starting the camera…',
+        body: 'Allow camera and motion access when the browser asks. You can cancel this start below.',
       }
-    case 'unavailable':
+    case 'placing':
       return {
-        title: 'The rear camera could not start',
-        body: 'Close other camera apps, check this page is served over HTTPS, then try again.',
+        title: 'Place the coast on the floor',
+        body: 'Normal tracking. Tap a textured floor patch above these controls. This first tap places the coast, not a piece.',
       }
-    case 'failed':
+    case 'tracking':
       return {
-        title: 'The AR session could not start',
-        body: 'Check that the local /ar/ files are being served, then retry or reload the page.',
+        title: 'Coast placed',
+        body: 'Tap one of your own pieces, then tap the water to build. Moving the phone changes the real perspective.',
+      }
+    case 'tracking-lost':
+      return {
+        title: 'Find the floor again',
+        body: 'Tracking is limited. Move slowly over cracks, gravel, grass or a patterned rug. The coast is hidden and construction pauses; accepted pieces are safe.',
       }
     case 'paused':
     case 'stopped':
       return {
-        title: 'Camera paused',
-        body: 'The camera and AR worker were released. Your shared saved layout is safe. Start again when you are ready.',
+        title: phase === 'paused' ? 'Camera paused' : 'Camera stopped',
+        body: 'The camera and AR engine were released. Your shared layout and revision are safe. Start again and place the coast afresh.',
       }
-    default:
+    case 'denied':
       return {
-        title: 'Start the marker AR',
-        body: 'Point the rear camera at the printed coastal illustration. Construction is saved in the trail and does not depend on this camera staying on.',
+        title: 'Camera access is blocked',
+        body: 'Allow camera access in the browser, then try again. HTTPS is required on a phone.',
+      }
+    case 'unavailable':
+      return {
+        title: 'World tracking is unavailable',
+        body: 'Open this page on a supported iPhone or Android phone with a current browser over HTTPS. No camera was requested here.',
+      }
+    case 'failed':
+      return {
+        title: 'World tracking could not start',
+        body: 'Check the local engine files and camera/motion permissions, then retry.',
       }
   }
+}
+
+function startLabel(phase: WorldArPhase) {
+  if (phase === 'preparing') return 'Preparing engine…'
+  if (phase === 'paused' || phase === 'stopped' || phase === 'failed') return 'Start camera again'
+  if (phase === 'denied') return 'Try camera again'
+  return 'Start camera'
+}
+
+function EngineNotice() {
+  return (
+    <div className="hunt-engine">
+      <p className="hunt-attribution">
+        8th Wall engine by Niantic Spatial, © 2026 Niantic Spatial, Inc. Proprietary{' '}
+        <a href={licenseUrl} target="_blank" rel="noreferrer">
+          XR Engine License Agreement
+        </a>
+        ; provided “AS IS”, without warranties; no endorsement.
+      </p>
+      <p className="hunt-attribution">
+        This app stores no camera frames or poses and adds no recording, upload or analytics service of its own. The
+        local 8th Wall engine processes frames for tracking; its post-camera network behaviour still needs a
+        phone/network check.
+      </p>
+    </div>
+  )
+}
+
+function IslandSizeControl({
+  value,
+  onChange,
+  id = 'island-size',
+}: {
+  value: number
+  onChange: (percent: number) => void
+  id?: string
+}) {
+  return (
+    <div className="hunt-size">
+      <div className="hunt-size__label">
+        <label htmlFor={id}>Island size</label>
+        <output htmlFor={id}>{value}%</output>
+      </div>
+      <input
+        id={id}
+        type="range"
+        min={50}
+        max={200}
+        step={5}
+        value={value}
+        aria-valuetext={`${value}% of default island size`}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <p className="hunt-size__note">Relative size, not metres. It does not move saved pieces or change the revision.</p>
+    </div>
+  )
+}
+
+interface CameraControlProps {
+  state: WorldArState
+  showStart: boolean
+  showStop: boolean
+  showRePlace: boolean
+  showSize: boolean
+  onStart: () => void
+  onStop: () => void
+  onRePlace: () => void
+  onSize: (percent: number) => void
+}
+
+function WorldCameraControls({
+  state,
+  showStart,
+  showStop,
+  showRePlace,
+  showSize,
+  onStart,
+  onStop,
+  onRePlace,
+  onSize,
+}: CameraControlProps) {
+  const copy = state.reloadRequired
+    ? {
+        title: 'Reload this page',
+        body: 'The previous camera startup did not finish cleanly. Reload before starting world tracking again.',
+      }
+    : worldPhaseCopy(state.phase)
+  const showDiagnostic =
+    state.reloadRequired ||
+    ['denied', 'unavailable', 'failed', 'tracking-lost'].includes(state.phase) ||
+    (!state.canStart && ['ready', 'paused', 'stopped'].includes(state.phase))
+
+  return (
+    <>
+      <h2>{copy.title}</h2>
+      <p>{copy.body}</p>
+      {showDiagnostic && <p className="hunt__diagnostic">{state.message}</p>}
+      {showSize && <IslandSizeControl value={state.sizePercent} onChange={onSize} />}
+      <div className="hunt-camera-actions">
+        {showStart && !state.reloadRequired && (
+          <button type="button" className="button button--primary" disabled={!state.canStart} onClick={onStart}>
+            {startLabel(state.phase)}
+          </button>
+        )}
+        {showStop && (
+          <button type="button" className="button button--secondary" onClick={onStop}>
+            {state.phase === 'starting' ? 'Cancel start' : 'Stop camera'}
+          </button>
+        )}
+        {showRePlace && (
+          <button type="button" className="button button--secondary" onClick={onRePlace}>
+            Re-place coast
+          </button>
+        )}
+        {state.reloadRequired && (
+          <button type="button" className="button button--secondary" onClick={() => window.location.reload()}>
+            Reload page
+          </button>
+        )}
+      </div>
+      <EngineNotice />
+    </>
+  )
 }
 
 export function BreakWavesPage({ sessionId, matchId }: Props) {
@@ -88,16 +247,16 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   const { state, reload } = useBreakWaves(sessionId)
   const [selectedId, setSelectedId] = useState<PieceId | null>(null)
   const [lensOn, setLensOn] = useState(true)
-  const [view, setView] = useState<SceneView>('oblique')
+  const [worldState, setWorldState] = useState<WorldArState>(INITIAL_WORLD_STATE)
   const [scanning, setScanning] = useState(false)
   const [help, setHelp] = useState(false)
   const [pending, setPending] = useState<Pending>(null)
   const [ghost, setGhost] = useState<GhostPiece | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [dismissedTest, setDismissedTest] = useState<number | null>(null)
-  const [arPhase, setArPhase] = useState<ArPhase>('idle')
+  const arPhase = worldState.phase
   const stageRef = useRef<HTMLDivElement>(null)
-  const arRef = useRef<BreakWavesAr | null>(null)
+  const arRef = useRef<BreakWavesWorldAr | null>(null)
   const mounted = useRef(true)
   const mutating = useRef(false)
   const activeSessionId = useRef(sessionId)
@@ -152,7 +311,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
     setSelectedId(null)
     setDismissedTest(null)
     setGhost(null)
-    setView('oblique')
+    setWorldState(INITIAL_WORLD_STATE)
     setPending(null)
     setNotice(null)
     setScanning(false)
@@ -169,16 +328,16 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   }, [myPieces, selectedId])
 
   useEffect(() => {
-    if (!side || state.status !== 'ready' || !stageRef.current) return
-    setArPhase('idle')
-    const controller = new BreakWavesAr({
+    // The SDK is prepared without a camera. This effect deliberately does not depend on pieces,
+    // results, pending actions or lens/selection changes: those are queued into the live controller.
+    if (!side || state.status !== 'ready' || clueUnlocked || !stageRef.current) return
+    const controller = new BreakWavesWorldAr({
       container: stageRef.current,
       mySide: side,
-      onPhase: setArPhase,
+      onState: setWorldState,
       onSelectPiece: (pieceId) => handlerRef.current.select(pieceId),
       onWaterTap: (point) => handlerRef.current.water(point),
     })
-    controller.setView(view)
     controller.setPieces(pieces)
     controller.setWavePieces(waveLayout)
     controller.setSelected(selectedId)
@@ -188,9 +347,9 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
     arRef.current = controller
     return () => {
       controller.dispose()
-      arRef.current = null
+      if (arRef.current === controller) arRef.current = null
     }
-  }, [side, state.status])
+  }, [side, state.status, sessionId, clueUnlocked])
 
   useEffect(() => {
     arRef.current?.setPieces(pieces)
@@ -207,18 +366,8 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   }, [lensOn, lensId])
 
   useEffect(() => {
-    arRef.current?.setView(view)
-  }, [view])
-
-  useEffect(() => {
     arRef.current?.setGhost(ghost)
   }, [ghost])
-
-  useEffect(() => {
-    if (clueUnlocked && arRef.current && arPhase !== 'idle' && arPhase !== 'stopped') {
-      arRef.current.stop('stopped')
-    }
-  }, [clueUnlocked, arPhase])
 
   useEffect(() => {
     function leave() {
@@ -256,7 +405,9 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   }
 
   async function editPiece(piece: BreakWavesPiece, x: number, z: number, rotation: number) {
-    if (!progress || !canEdit) return
+    // React's phase can lag the controller inside the same event (for example Re-place or loss).
+    // The live controller is the authority for whether a mutation may start.
+    if (!progress || !canEdit || arRef.current?.phase !== 'tracking') return
     const nextX = snapCoordinate(x)
     const nextZ = snapCoordinate(z)
     const nextRotation = normaliseRotation(rotation)
@@ -303,7 +454,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   }
 
   async function returnPiece() {
-    if (!progress || !selectedPiece || !canEdit || mutating.current) return
+    if (!progress || !selectedPiece || !canEdit || arRef.current?.phase !== 'tracking' || mutating.current) return
     mutating.current = true
     const actionId = crypto.randomUUID()
     setPending({ kind: 'return', pieceId: selectedPiece.id })
@@ -337,6 +488,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
       !progress ||
       pending ||
       arPhase !== 'tracking' ||
+      arRef.current?.phase !== 'tracking' ||
       !progress.opened_at ||
       progress.solved_at ||
       ownPlaced < 2
@@ -411,25 +563,46 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   }
 
   function handleSelect(pieceId: PieceId) {
-    if (!canEdit) return
+    if (!canEdit || arRef.current?.phase !== 'tracking') return
     if (side && myPieces.some((piece) => piece.id === pieceId)) selectPiece(pieceId)
   }
 
   function handleWaterTap(point: { x: number; z: number }) {
-    if (!canEdit || !selectedPiece) return
+    if (!canEdit || arRef.current?.phase !== 'tracking' || !selectedPiece) return
     void editPiece(selectedPiece, point.x, point.z, selectedPiece.rotation)
   }
 
   handlerRef.current = { select: handleSelect, water: handleWaterTap }
 
   function rotateSelected() {
-    if (!canEdit || !selectedPiece?.placed) return
+    if (!canEdit || arRef.current?.phase !== 'tracking' || !selectedPiece?.placed) return
     void editPiece(selectedPiece, selectedPiece.x, selectedPiece.z, selectedPiece.rotation + 15)
   }
 
+  function openScanner() {
+    // The scanner may open its own camera only after the AR engine has released its session.
+    arRef.current?.stop('stopped')
+    setScanning(true)
+  }
+
   function startCamera() {
-    setScanning(false)
-    void arRef.current?.start()
+    if (scanning) return
+    // XR8.run() must stay inside this click's user gesture; the controller never awaits first.
+    arRef.current?.start()
+  }
+
+  function stopCamera() {
+    arRef.current?.stop('stopped')
+  }
+
+  function rePlaceIsland() {
+    // Local anchor/ghost only: accepted pieces, revision and ready checks are untouched.
+    setGhost(null)
+    arRef.current?.rePlace()
+  }
+
+  function resizeIsland(percent: number) {
+    arRef.current?.setIslandSize(percent)
   }
 
   if (state.status === 'loading') return <p className="screen muted">Loading Break the waves…</p>
@@ -473,25 +646,37 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   if (!progress) return <p className="screen muted">Loading Break the waves…</p>
 
   const partner = match.partner
-  const cameraRunning = ['starting', 'scanning', 'tracking', 'tracking-lost'].includes(arPhase)
-  const copy = phaseCopy(arPhase)
-  const showStartPanel =
+  const cameraRunning = ['starting', 'placing', 'tracking', 'tracking-lost'].includes(arPhase)
+  const showCameraSetup =
     !clueUnlocked &&
     !showResult &&
     !scanning &&
     progress.opened_at !== null &&
     (!cameraRunning || arPhase === 'starting')
+  const showPlacement = !clueUnlocked && !showResult && !scanning && arPhase === 'placing'
+  const showTrackingLost = !clueUnlocked && !showResult && !scanning && arPhase === 'tracking-lost'
+  const showBuildSheet = !clueUnlocked && !showResult && !scanning && arPhase === 'tracking'
   const showScanPanel = !clueUnlocked && !scanning && progress.opened_at === null
   const trackingLabel =
     arPhase === 'tracking'
-      ? 'Card in view'
-      : arPhase === 'scanning'
-        ? 'Looking for the card'
+      ? 'Coast placed'
+      : arPhase === 'placing'
+        ? 'Tap floor to place'
         : arPhase === 'tracking-lost'
-          ? 'Card lost'
+          ? 'Tracking limited'
           : arPhase === 'starting'
             ? 'Starting camera'
-            : 'Camera off'
+            : arPhase === 'preparing'
+              ? 'Preparing engine'
+              : arPhase === 'ready'
+                ? 'Engine ready'
+                : arPhase === 'denied'
+                  ? 'Camera blocked'
+                  : arPhase === 'unavailable'
+                    ? 'Tracking unavailable'
+                    : arPhase === 'failed'
+                      ? 'AR needs attention'
+                      : 'Camera off'
 
   if (clueUnlocked) {
     return (
@@ -578,42 +763,22 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
         <span>{trackingLabel}</span>
       </div>
 
-      {!showResult && cameraRunning && arPhase !== 'starting' && (
-        <>
-          <div
-            className="hunt-view"
-            role="group"
-            aria-labelledby="hunt-view-label"
-            aria-describedby="hunt-view-note"
-          >
-            <span id="hunt-view-label" className="hunt-view__label">
-              View
-            </span>
-            <div className="hunt-view__options">
-              <button type="button" aria-pressed={view === 'oblique'} onClick={() => setView('oblique')}>
-                Oblique
-              </button>
-              <button type="button" aria-pressed={view === 'top'} onClick={() => setView('top')}>
-                Top
-              </button>
-            </div>
-          </div>
-          <p id="hunt-view-note" className="hunt-view__note">
-            Tilts on the card; moving the phone still changes perspective.
-          </p>
-        </>
-      )}
-
-      {arPhase === 'scanning' && (
-        <div className="hunt__hint" role="status">
-          <span aria-hidden="true">◎</span>
-          Point at the coastal illustration on the printed card. Hold it flat and fill the frame.
-        </div>
-      )}
-      {arPhase === 'tracking-lost' && (
+      {showTrackingLost && (
         <div className="hunt__lost" role="status">
           <strong>Find your coast again</strong>
-          <p>Point the camera back at the illustration. Construction pauses; your saved layout is safe.</p>
+          <p>
+            Tracking is limited. Move slowly over cracks, gravel, grass or a patterned rug. Construction pauses; your
+            accepted pieces are safe.
+          </p>
+          <div className="hunt__lost-actions">
+            <button type="button" className="button button--secondary" onClick={rePlaceIsland}>
+              Re-place coast
+            </button>
+            <button type="button" className="button button--secondary" onClick={stopCamera}>
+              Stop camera
+            </button>
+          </div>
+          <EngineNotice />
         </div>
       )}
 
@@ -624,10 +789,10 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
           </span>
           <h2 id="scan-title">Find the stop card</h2>
           <p>
-            Both of you scan the same <strong>Break the waves</strong> card. The scanner closes before the AR camera
-            starts, so only one camera is ever in use.
+            Both of you scan the same <strong>Break the waves</strong> card. The scanner releases its camera before the
+            floor AR camera can start, so only one camera is ever in use.
           </p>
-          <button type="button" className="button button--primary button--full" onClick={() => setScanning(true)}>
+          <button type="button" className="button button--primary button--full" onClick={openScanner}>
             <QrIcon />
             Scan the QR card
           </button>
@@ -635,28 +800,44 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
         </section>
       )}
 
-      {showStartPanel && (
-        <section className={`hunt__setup ${['denied', 'unavailable', 'failed'].includes(arPhase) ? 'hunt__setup--warning' : ''}`}>
+      {showCameraSetup && (
+        <section
+          className={`hunt__setup ${['denied', 'unavailable', 'failed'].includes(arPhase) ? 'hunt__setup--warning' : ''}`}
+          aria-label="Camera and placement status"
+        >
           <span className="hunt__setup-icon" aria-hidden="true">
             <WaveIcon size={30} />
           </span>
-          <h2>{copy.title}</h2>
-          <p>{copy.body}</p>
-          {arPhase === 'starting' ? (
-            <button
-              type="button"
-              className="button button--secondary button--full"
-              onClick={() => arRef.current?.stop('stopped')}
-            >
-              Cancel start
-            </button>
-          ) : (
-            <button type="button" className="button button--primary button--full" onClick={startCamera}>
-              {arPhase === 'idle' ? 'Start AR camera' : 'Start camera again'}
-            </button>
-          )}
-          {arPhase === 'paused' && <p className="hunt__fine">Camera released when you left the page.</p>}
-          <p className="hunt__fine">Camera frames are processed on this device. Nothing is recorded or uploaded.</p>
+          <WorldCameraControls
+            state={worldState}
+            showStart={!cameraRunning && arPhase !== 'unavailable'}
+            showStop={arPhase === 'starting'}
+            showRePlace={false}
+            showSize={false}
+            onStart={startCamera}
+            onStop={stopCamera}
+            onRePlace={rePlaceIsland}
+            onSize={resizeIsland}
+          />
+        </section>
+      )}
+
+      {showPlacement && (
+        <section className="hunt__setup hunt__setup--floor" aria-label="Coast placement">
+          <span className="hunt__setup-icon" aria-hidden="true">
+            <WaveIcon size={30} />
+          </span>
+          <WorldCameraControls
+            state={worldState}
+            showStart={false}
+            showStop
+            showRePlace={false}
+            showSize
+            onStart={startCamera}
+            onStop={stopCamera}
+            onRePlace={rePlaceIsland}
+            onSize={resizeIsland}
+          />
         </section>
       )}
 
@@ -696,6 +877,38 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
               {currentResult.corridor_clear ? '✓' : '!'} Boat route {currentResult.corridor_clear ? 'open' : 'blocked'}
             </span>
           </div>
+          {arPhase === 'tracking' ? (
+            <div className="hunt-result__session" aria-label="Camera and island controls">
+              <div className="hunt-result__session-head">
+                <strong>Camera and island</strong>
+                <span>Still tracking</span>
+              </div>
+              <div className="hunt-camera-actions">
+                <button type="button" className="button button--secondary" onClick={stopCamera}>
+                  Stop camera
+                </button>
+                <button type="button" className="button button--secondary" onClick={rePlaceIsland}>
+                  Re-place coast
+                </button>
+              </div>
+              <IslandSizeControl id="result-island-size" value={worldState.sizePercent} onChange={resizeIsland} />
+              <EngineNotice />
+            </div>
+          ) : (
+            <div className="hunt-result__camera">
+              <WorldCameraControls
+                state={worldState}
+                showStart={!cameraRunning && arPhase !== 'unavailable'}
+                showStop={cameraRunning}
+                showRePlace={arPhase === 'tracking-lost'}
+                showSize={cameraRunning}
+                onStart={startCamera}
+                onStop={stopCamera}
+                onRePlace={rePlaceIsland}
+                onSize={resizeIsland}
+              />
+            </div>
+          )}
           {!currentResult.passed && currentResult.failures.length > 0 && (
             <ul className="hunt-result__failures">
               {currentResult.failures.map((failure) => (
@@ -760,7 +973,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
         </section>
       )}
 
-      {!showResult && cameraRunning && arPhase !== 'starting' && (
+      {showBuildSheet && (
         <section className="hunt-sheet" aria-label="Build controls">
           <div className="hunt-sheet__handle" aria-hidden="true" />
           <button
@@ -775,6 +988,16 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
             </span>
             <span className="hunt-lens__switch" aria-hidden="true" />
           </button>
+
+          <IslandSizeControl value={worldState.sizePercent} onChange={resizeIsland} />
+          <div className="hunt-island-actions">
+            <button type="button" className="button button--secondary" onClick={rePlaceIsland}>
+              Re-place coast
+            </button>
+            <button type="button" className="button button--secondary" onClick={stopCamera}>
+              Stop camera
+            </button>
+          </div>
 
           <div className="hunt-sheet__head">
             <strong>Your breakwaters</strong>
@@ -855,6 +1078,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
               `Saved layout revision ${progress.revision}. ${myReady ? 'A change clears both ready checks.' : ownPlaced < 2 ? 'Place both of your pieces to ready the test.' : 'Test starts when you are both ready.'}`
             )}
           </p>
+          <EngineNotice />
         </section>
       )}
 
@@ -874,9 +1098,17 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
             illustrative model. Breakwaters reduce wave energy; they do not stop flooding from higher sea levels.
           </p>
           <p>
-            Oblique and Top tilt the miniature on the marker. They do not freeze the camera or guarantee a fixed
-            angle: moving your phone still changes the real perspective.
+            The camera starts only when you press Start camera. Stand over a textured floor, then tap the floor once to
+            place the coast. That first tap cannot place a piece. Moving the phone changes the real perspective; this is
+            not a fixed camera angle. Island size and Re-place are local controls: they never change accepted pieces,
+            readiness or the saved revision.
           </p>
+          <p>
+            Construction is saved in the trail and does not depend on the camera staying on. The app stores no camera
+            frames or poses. The local 8th Wall engine processes frames for tracking; verify post-camera network
+            behaviour on a phone before making a privacy claim.
+          </p>
+          <EngineNotice />
           <button type="button" className="button button--primary button--full" onClick={() => setHelp(false)}>
             Back to the coast
           </button>

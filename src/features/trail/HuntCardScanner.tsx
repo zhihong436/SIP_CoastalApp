@@ -13,8 +13,8 @@ const SCAN_INTERVAL_MS = 250
 const SCAN_WIDTH = 640
 const NOTICE_MS = 3000
 
-// The hunt scanner only accepts the canonical Break the waves card. The parent closes this component
-// before any AR controller starts, so the scanner's camera is always released before MindAR starts.
+// The hunt scanner only accepts the canonical Break the waves card. The parent stops/releases the AR
+// session before opening this component, and closes it before Start can run, so only one camera is used.
 export function HuntCardScanner({ onClose, onDetected }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const camera = useCamera(videoRef)
