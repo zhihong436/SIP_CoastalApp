@@ -17,6 +17,7 @@ shown as **not built yet**; no later stop is simulated or unlocked.
 | `/scan/storm-waves` | Legacy stop 1 card. Its old behaviour is unchanged. |
 | `/card.html` | Print helper. The card type selector keeps the standalone experiment as the default and adds a Break the waves hunt variant. |
 | `/ar.html` | Standalone experiment, unchanged and still usable. |
+| `/diorama.html` | Standalone diorama preview. It is presentation-only and is not the paired stop or a debug route into it. |
 
 Unknown or future QR names do not call a hunt mutation. The hunt scanner accepts only the exact
 `/scan/break-the-waves` path. The legacy scan and in-app scanner do not accept the hunt card. The
@@ -93,13 +94,29 @@ the import map those vendor modules need. No CDN or new engine is used.
   camera while it runs. Navigation, page hide, backgrounding, cancel and startup failure release
   the stream, MindAR worker/controller and renderer.
 - Tracking loss disables construction and shows a recovery message. Saved construction is fetched
-  from the database and is not lost when the camera stops.
-- Both phones show the same marker-relative coast and all accepted pieces, coloured and labelled by
-  owner. The miniature is scaled to 1.35 target widths (1.5× the original 0.9) so the coast, piece
-  labels and tap area read at a normal phone-to-card distance. This is presentation only: the world
-  stays centred on the marker, and puzzle coordinates, pointer-to-local conversion and saved layouts
-  are unchanged. Player A can toggle a wave/risk lens; player B can toggle a seabed/boat-corridor
-  lens. Both can inspect and build.
+  from the database and is not lost when the camera stops. A view choice remains a safe
+  presentation-only control while tracking is lost, because construction is already disabled.
+- Both phones show the same shared lighthouse-island diorama on the marker: the lighthouse, coast,
+  surf, boats and breakwater rock ridges. The shared model is scaled by `1 / PUZZLE_SCALE` (1/2.7) so
+  puzzle coordinates stay the scene's local coordinates; the whole world is then scaled 1.35× and
+  tilted 25° for the default Oblique view. This is presentation only: the world stays centred on the
+  marker, and puzzle coordinates, pointer-to-local conversion and saved layouts are unchanged.
+- Scene breakwaters are rock ridges kept inside the exact authoritative piece footprint. Accepted
+  pieces use quieter owner-tinted accents and a selected-piece outline rather than text labels in
+  the scene. The piece cards, owner swatches and sheet text still identify `A1`, `A2`, `B1` and `B2`
+  explicitly. There are no large circles or owner labels around scene pieces.
+- Player A can toggle a wave/risk lens; player B can toggle a seabed/boat-corridor lens. The seabed
+  lens shows the exact buildable-water rectangle and a distinct central boat corridor, so the
+  buildable area is not confused with the larger decorative sea. Both can inspect and build.
+- The presentation starts in **Oblique**. A compact **View · Oblique / Top** control appears while
+  the camera is running (including tracking-lost, when construction is disabled). The choice is
+  local UI state: it is queued on the AR controller before scene creation and reapplied after a
+  camera stop, restart or tracking recovery. It is not a game mutation and does not change readiness,
+  the saved revision or piece positions. It resets to Oblique at an actual session boundary; an
+  ordinary saved-state refresh preserves the player's current view.
+- The control copy and help sheet say that the choice tilts the miniature on the marker. Moving the
+  phone still changes the real perspective; **Top is not a fixed-camera-angle guarantee**. This does
+  not add an orbit/viewer mode or bypass marker AR.
 - The reliable baseline is: select one of your own piece cards, tap the water, then use Rotate 15°
   or Return. A tapped draft ghost and a "saving" note are unconfirmed; only the database-returned
   accepted revision is shown as placed.
@@ -150,14 +167,16 @@ Local, repository and browser checks (not paired acceptance):
 
 | Command / check | Result |
 | --- | --- |
-| `npm run build` (`tsc -b && vite build`) | Exit 0 after the review corrections; type check and production build pass. |
+| `npm run build` (`tsc -b && vite build`) | Exit 0 after the review corrections; type check and production build pass. This was rerun for the view integration and exited 0. |
 | Challenge helper probes against `src/features/trail/breakWaves.ts` | Pass for failing one-sided layout, two genuinely different four-piece passing layouts, rotated vertical exposure, boat blockage, out-of-water, overlap and two-piece insufficiency. |
-| `git diff --check` on authored files | See final work report; vendor files unchanged. |
+| `git diff --check` on authored files | Exit 0, including the view integration and docs updates. Vendor files unchanged. |
 | Chromium on `dist/` via `npm run preview` | Card variant, pinned import map, local vendor imports and phone-width layout checked. |
+| Focused controller view queuing/restart check | **12/12 pass.** Production `BreakWavesAr` and `BreakWavesScene` with a test-only MindAR vendor and synthetic fixed camera/anchor. Top set before first scene creation applied immediately; tracking loss/recovery kept it; pause disposed the anchor scene while retaining the queued view; restarts reapplied Oblique/Top and restored all four saved pieces and the wave lens; no console/page errors. Mocked camera, not phone evidence. |
+| Full-page integrated view and framing check | **20/20 pass.** Production React page, controller and scene at 390×844 and 320×568 in both views, with mocked REST/auth and a fixed test camera at anchor +Z 4.5, FOV 50. Oblique was the default; Top/Oblique toggled the world pitch, made zero RPC calls and left readiness/revision unchanged; tracking-lost disabled Rotate/Return but kept the view control safe; restart and ordinary state refresh kept Top; an SPA session change reset to Oblique; no horizontal overflow or console errors. All 14 target positions (28 marker/backing meshes), all four placed pieces and a 5×5 sample of the authoritative water rectangle were inside the canvas and unblocked by UI at both sizes. |
 | Synthetic camera lifecycle smoke | Delayed `getUserMedia` cancel released the late track; two start/background cycles ended both tracks, removed video/canvas and removed 2 of 2 captured MindAR resize listeners. SPA navigation ended the live track. Synthetic camera, **not** a phone or paired acceptance. |
 | Focused mocked route-lifecycle check | A delayed session-A parent load was superseded by a session-B legacy page and did not restore the A hunt page after 1.8 s. Starting the synthetic AR camera on A, then making the same in-app route change to B, left the B board visible and showed A's captured track as `ended` with no video/canvas left. Mocked REST/browser evidence, **not** real paired networking or RLS. |
 | Mocked REST render of the hunt screen | Start, scanning, failure result, success result and not-built clue layouts checked at 390×844; start and live build layouts also checked at 320×568, with no horizontal overflow. **Not** an RLS, database, realtime or two-account pass. |
-| Local presentation-sizing harness | Actual scene and tap handler loaded in headless Edge at exact 390×844 and 320×568 viewports with the build sheet present. At the same synthetic marker pose, the sea, target line and piece projections are about 1.5× their former size (piece length 1.51× / 1.51×; target line 1.53× / 1.53×). Water taps returned the same local coordinates before and after (delta 0), and a piece tap selected `a1`. At 1.35 scale the target line stayed above the sheet on both viewports; the playable water band was 100% visible at 390×844 and 92% at 320×568, where a thin near-edge strip sits behind the sheet. **Not** real marker tracking or phone acceptance. |
+| Historical: local presentation-sizing harness (before the shared diorama) | This measured the earlier simplified scene, not the current integrated framing. At a synthetic marker pose, the sea, target line and piece projections were about 1.5× their former size; water taps returned the same local coordinates before and after, and a piece tap selected `a1`. **Not** real marker tracking or phone acceptance and not evidence for the current diorama's outer-art clipping. |
 | Local PostgreSQL 17 migration and legacy preservation | **Pass.** Fresh PG 17.11 database; existing migrations through `160000` applied; realistic legacy active and lobby fixtures created with the old RPCs; `170000` applied with `ON_ERROR_STOP=1`. Existing session/member/progress JSON was unchanged apart from `game_version = 'legacy'`; row counts unchanged; new lobby sessions were `hunt-v1`. |
 | Local PostgreSQL authoritative actions and geometry | **Pass.** Real authenticated-role calls exercised open, place/rotate/return, shared revisions, ownership denial, invalid/out-of-water/overlap/NaN/missing-input rejection, boat-blocking failure, horizontal pass, rotated pass, vertical exposure and two-piece insufficiency. |
 | Local PostgreSQL RLS, privileges and publication | **Pass.** Progress and action-log RLS enabled; only member SELECT on progress; no client writes or action-log reads; new public RPC grants present; internal helper execute revoked; outsider read count 0; anon denied; `break_waves_progress` present in `supabase_realtime`. |
@@ -169,6 +188,14 @@ Local, repository and browser checks (not paired acceptance):
 | Real two-iPhone marker tracking and paired game | **NOT RUN**. |
 
 Captured counters:
+
+- Framing at the fixed integrated-check pose: the outer diorama model extends to NDC x ±2.115 (Oblique) / ±2.13 (Top)
+  on 390×844 and x ±1.735 / ±1.747 on 320×568, with y −1.17..0.585 / −1.31..0.67. The lighthouse/island
+  outer art is therefore clipped at the sides and bottom, as expected for a close phone-like aim. The
+  authoritative water plane remained inside the canvas at NDC x ±0.641 / ±0.618, y −0.162..0.055 /
+  −0.182..0.052 on 390×844, and x ±0.525 / ±0.507 at 320×568. This does **not** prove full-phone framing
+  or physical device performance; the compact 320×568 sheet is 229 px high and starts below the water,
+  pieces and targets.
 
 - Main hunt: revision `25`, attempts `7`; the final result revision was `25`, both acknowledgements
   landed, the clue timestamp was set once, and the session ended `paused` with `current_stop = null`.
@@ -268,15 +295,21 @@ matched pair**. Do not use an existing legacy pair for this test.
 2. Print the hunt card from the card page. Both scan it (phone camera or in-app scanner). Confirm
    each sees the stop and the same goal. Confirm the scanner camera closes before AR starts.
 3. Tap **Start AR camera** on both. Allow the rear camera. Point at the printed illustration.
-   Confirm real marker tracking on both phones, and that the coast, the west/east target lines and
-   all accepted pieces are visibly larger and readable without zooming or panning. At 390×844 and
-   320×568 the target line and most of the near water remain above the build sheet at a natural aim
-   above the sheet. Confirm at least 44 px touch controls.
-4. Confirm A sees the wave/risk lens and B sees the seabed/boat-corridor lens. Toggle each. Confirm
-   both can still inspect and select only their own two piece cards.
-5. Place one of A's pieces, then rotate it and move it. Confirm B sees the accepted piece, owner
-   label and revision change. Repeat from B. Confirm tapping a piece does nothing while the card is
-   lost, and returning to the card restores the saved layout.
+   Confirm real marker tracking on both phones. The shared diorama should be visibly larger and
+   readable without zooming or panning. Judge the authoritative water rectangle, target line and
+   accepted pieces rather than the decorative outer island edge: at a close, phone-like aim the
+   outer art can leave the frame even when the playable water is visible. At 390×844 and 320×568
+   the target line and water remain usable at a natural aim above the build sheet. Confirm at least
+   44 px touch controls.
+4. Confirm the stop starts in **Oblique**. Tap **Top**, then return to **Oblique**. Confirm the
+   miniature tilts on the marker while the live camera keeps moving behind it, and that the note says
+   moving the phone still changes perspective. Confirm A sees the wave/risk lens and B sees the
+   seabed/boat-corridor lens, including the exact buildable-water boundary. Toggle each. Confirm both
+   can still inspect and select only their own two piece cards.
+5. Place one of A's pieces, then rotate it and move it. Confirm B sees the accepted piece's quiet
+   owner accent, exact footprint and revision change. Repeat from B. Confirm there are no text labels
+   on scene pieces. Confirm tapping a piece does nothing while the card is lost, and returning to the
+   card restores the saved layout and the selected view.
 6. Mark both ready with a deliberately one-sided or boat-blocking layout. Confirm exactly one
    authoritative result appears on both phones, with specific west/east/boat counts, and both ready
    checks are cleared. Confirm accepted pieces remain placed.
@@ -288,9 +321,10 @@ matched pair**. Do not use an existing legacy pair for this test.
 9. Press Continue on one phone. Confirm the other still needs to continue and the clue does not
    appear yet. Press Continue on the second. Confirm both see the Higher ground clue and the clear
    **not built yet** note, with no third card or completion claim.
-10. Lock a phone or switch apps during AR. Confirm the camera indicator turns off and the app shows
-    the paused state. Return and start again; confirm the saved revision is still there. Navigate
-    away and back; confirm no camera or worker remains active.
+10. Select Top, then lock a phone or switch apps during AR. Confirm the camera indicator turns off
+    and the app shows the paused state. Return and start again; confirm the saved revision and Top
+    view are still there. Navigate away and back; confirm no camera or worker remains active. Start a
+    genuinely new trail session and confirm it begins in Oblique rather than inheriting Top.
 11. Third-account denial: with a third signed-in account that is not in the pair, open
     `/trail/<session-id>` and `/scan/break-the-waves`. Confirm neither loads the stop nor writes
     progress. With a legacy active account, scan the hunt card and confirm it is refused as the

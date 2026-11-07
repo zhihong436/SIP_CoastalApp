@@ -192,6 +192,73 @@
   background: #b24b3d;
 }
 
+.hunt-view {
+  position: absolute;
+  top: calc(9.85rem + env(safe-area-inset-top));
+  right: 1.1rem;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.2rem 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 88%);
+  color: #29443d;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+}
+
+.hunt-view__label {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hunt-view__options {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.12rem;
+  border-radius: var(--radius-pill);
+  background: #e6eee9;
+}
+
+.hunt-view__options button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.48rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: #49645c;
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hunt-view__options button[aria-pressed='true'] {
+  background: #fffdf7;
+  color: var(--color-coastal);
+  box-shadow: 0 1px 3px rgb(20 51 47 / 16%);
+}
+
+.hunt-view__note {
+  position: absolute;
+  top: calc(12.85rem + env(safe-area-inset-top));
+  right: 1.1rem;
+  z-index: 8;
+  max-width: 13rem;
+  margin: 0;
+  padding: 0.16rem 0.42rem;
+  border-radius: 0.55rem;
+  background: rgb(8 35 38 / 62%);
+  color: rgb(255 255 255 / 92%);
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: right;
+}
+
 .hunt__hint {
   position: absolute;
   top: 34%;
@@ -807,23 +874,28 @@
     font-size: 0.78rem;
   }
 
-  .hunt__tracking {
+  .hunt__tracking,
+  .hunt-view {
     top: calc(9.55rem + env(safe-area-inset-top));
+  }
+
+  .hunt-view__note {
+    top: calc(12.55rem + env(safe-area-inset-top));
   }
 
   .hunt-sheet {
     max-height: 56dvh;
-    padding-top: 0.4rem;
-    padding-bottom: calc(0.4rem + env(safe-area-inset-bottom));
+    padding-top: 0.2rem;
+    padding-bottom: calc(0.2rem + env(safe-area-inset-bottom));
   }
 
   .hunt-sheet__handle {
-    margin-bottom: 0.3rem;
+    display: none;
   }
 
   .hunt-sheet__head {
-    margin-top: 0.35rem;
-    margin-bottom: 0.25rem;
+    margin-top: 0.2rem;
+    margin-bottom: 0.15rem;
   }
 
   .hunt-piece {
@@ -836,11 +908,16 @@
 
   .hunt-controls,
   .hunt-ready {
-    margin-top: 0.3rem;
+    margin-top: 0.15rem;
+  }
+
+  .hunt-ready__button {
+    min-height: 2.75rem;
   }
 
   .hunt-sheet__note {
-    margin-top: 0.35rem;
+    min-height: 1.35em;
+    margin-top: 0.15rem;
   }
 
   .hunt__setup {

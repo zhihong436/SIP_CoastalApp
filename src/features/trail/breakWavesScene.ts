@@ -1,27 +1,33 @@
-// The marker-relative Break the waves miniature. It is deliberately a readable, simplified model:
-// the same piece-centreline shelter geometry that the database evaluates drives the visible water.
-// Three.js is loaded at runtime from the pinned local vendor module, so it is untyped here.
+// The marker-relative Break the waves miniature. The shared lighthouse-island diorama supplies the
+// approved scenery and surf; this scene adds the game's exact target line, lenses, construction
+// outlines, ghost and marker-relative picking. Puzzle coordinates stay the world's local coordinates:
+// the shared model is simply scaled by 1 / PUZZLE_SCALE and the whole world takes the local pitch.
 import {
-  COAST_Z,
   CORRIDOR_HALF_WIDTH,
-  EAST_TARGET_X,
   PIECE_LENGTH,
   PIECE_WIDTH,
   TARGET_Z,
   WATER,
   WEST_TARGET_X,
+  EAST_TARGET_X,
   pieceSheltersPoint,
   type BreakWavesPiece,
   type BreakWavesResult,
   type PieceId,
   type Side,
 } from './breakWaves'
+import {
+  createLighthouseDiorama,
+  PUZZLE_SCALE,
+  type LighthouseDiorama,
+} from '../../diorama/dioramaModel'
 
 type Three = any
 type Object3D = any
 type Material = any
 
 export type LensId = 'waves' | 'seabed'
+export type SceneView = 'oblique' | 'top'
 
 export interface GhostPiece {
   owner: Side
@@ -44,63 +50,39 @@ export interface BreakWavesScene {
   setGhost(ghost: GhostPiece | null): void
   setLens(lens: LensId | null): void
   setEvaluation(result: BreakWavesResult): void
+  setView(view: SceneView): void
   dispose(): void
 }
 
-const OWNER_COLOR: Record<Side, number> = { a: 0xc23a4f, b: 0xb98a2e }
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
-}
-
-function smoothstep(edge0: number, edge1: number, value: number) {
-  const t = clamp((value - edge0) / (edge1 - edge0), 0, 1)
-  return t * t * (3 - 2 * t)
-}
+const OBLIQUE_PITCH = (25 * Math.PI) / 180
+const BASE_SCALE = 1.35
+const WATER_PICK_Y = 0.03
+const TARGET_MARK_Y = 0.06
+const SHELTERED_COLOR = 0x8fffbd
+const EXPOSED_COLOR = 0xff6a52
+const NEUTRAL_MARK_COLOR = 0xfff3d7
+const LENS_COLOR = 0x76dfd2
+const BLOCKED_COLOR = 0xff3d2e
+const SELECTION_COLOR: Record<Side, number> = { a: 0xff8fa1, b: 0xffd166 }
 
 function disposeObject(object: Object3D) {
+  const geometries = new Set<any>()
+  const materials = new Set<any>()
+  const textures = new Set<any>()
   object.traverse((child: any) => {
-    child.geometry?.dispose()
+    if (child.geometry) geometries.add(child.geometry)
     const material: Material | Material[] | undefined = child.material
-    const materials = Array.isArray(material) ? material : material ? [material] : []
-    for (const item of materials) {
-      item.map?.dispose()
-      item.dispose?.()
+    const items = Array.isArray(material) ? material : material ? [material] : []
+    for (const item of items) {
+      materials.add(item)
+      for (const key of ['map', 'alphaMap', 'emissiveMap', 'normalMap', 'roughnessMap'] as const) {
+        if (item[key]) textures.add(item[key])
+      }
     }
   })
-}
-
-function standardMaterial(THREE: Three, color: number, options: Record<string, unknown> = {}) {
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.82,
-    metalness: 0.02,
-    flatShading: true,
-    ...options,
-  })
-}
-
-function makeLabel(THREE: Three, text: string, color: number) {
-  const canvas = document.createElement('canvas')
-  canvas.width = 160
-  canvas.height = 80
-  const context = canvas.getContext('2d')
-  if (context) {
-    context.fillStyle = 'rgba(255, 250, 239, 0.94)'
-    context.fillRect(16, 14, 128, 52)
-    context.fillStyle = `#${color.toString(16).padStart(6, '0')}`
-    context.font = '700 30px system-ui, sans-serif'
-    context.textAlign = 'center'
-    context.textBaseline = 'middle'
-    context.fillText(text, 80, 41)
-  }
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.needsUpdate = true
-  const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: false }),
-  )
-  sprite.scale.set(0.085, 0.0425, 1)
-  return sprite
+  for (const geometry of geometries) geometry.dispose?.()
+  for (const texture of textures) texture.dispose?.()
+  for (const material of materials) material.dispose?.()
 }
 
 export function createBreakWavesScene(
@@ -111,223 +93,140 @@ export function createBreakWavesScene(
   options: { mySide: Side; callbacks: SceneCallbacks },
 ): BreakWavesScene {
   const { mySide, callbacks } = options
+  const reducedMotion =
+    typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
   const world = new THREE.Group()
-  // The anchor's plane is XY with Z coming out of the card. Rotating makes Y up, like the experiment.
-  world.rotation.x = Math.PI / 2
-  // Keep the playable coast large enough to read and tap at normal phone-to-card distance.
-  // This is presentation only: puzzle coordinates, pointer-to-local conversion and saved state stay unchanged.
-  world.scale.setScalar(1.35)
+  // The anchor's plane is XY with Z coming out of the card. Rotating makes Y up. The extra local
+  // pitch is presentation only; hit conversion still goes through this same world transform.
+  //
+  // The model's seaward/front direction is local +z. A camera looking at the marker from the
+  // anchor's +Z side must see that water face, not the landward island back. At PI/2 - pitch,
+  // anchor z = model z * sin(pitch), so local +z maps to anchor +Z (the camera side) and local -z
+  // stays on the landward side. PI/2 + pitch would reverse that and show the landward face.
+  world.rotation.x = Math.PI / 2 - OBLIQUE_PITCH
+  world.scale.setScalar(BASE_SCALE)
   anchorGroup.add(world)
 
-  const animated: Array<(time: number) => void> = []
+  let currentView: SceneView = 'oblique'
+  function setView(view: SceneView) {
+    currentView = view
+    world.rotation.x = Math.PI / 2 - (currentView === 'oblique' ? OBLIQUE_PITCH : 0)
+    world.updateMatrixWorld(true)
+  }
+
   let interactive = false
   let selectedId: PieceId | null = null
   let piecesSignature = ''
   let waveSignature = ''
   let wavePieces: BreakWavesPiece[] = []
   let evaluation: BreakWavesResult | null = null
+  let activeLens: LensId | null = null
   let ghost: Object3D | null = null
+  let ghostFillMaterial: Material | null = null
+  let ghostOutlineMaterial: Material | null = null
+  let disposed = false
 
-  // ----- Lighting -----------------------------------------------------------------
-  world.add(new THREE.HemisphereLight(0xe8fff8, 0x816743, 4.3))
-  const keyLight = new THREE.DirectionalLight(0xfff3d0, 4.1)
-  keyLight.position.set(-0.5, 1.15, 0.7)
+  // ----- Shared island model ------------------------------------------------------
+  const model: LighthouseDiorama = createLighthouseDiorama(THREE, {
+    pieces: [],
+    compact: window.innerWidth < 700,
+    shadows: true,
+    groundShadow: false,
+    maxAnisotropy: 1,
+    zOffset: 0,
+    breakwaterMode: 'footprint',
+    ownerAccents: true,
+    boats: [{ x: 0.02, z: 0.5, rotation: 0.25, scale: 1 }],
+    shelterAt: (puzzleX, puzzleZ) =>
+      wavePieces.some((piece) => pieceSheltersPoint(piece, puzzleX, puzzleZ)),
+  })
+  // One inverse transform takes every model and pick point back to exact puzzle coordinates.
+  model.root.scale.setScalar(1 / PUZZLE_SCALE)
+  model.root.name = 'diorama-model'
+  world.add(model.root)
+
+  // ----- Lighting ----------------------------------------------------------------
+  // Warm key, cool fill and a lighthouse glow, matching the standalone preview. Shadows and tone
+  // mapping are temporarily enabled on the caller's renderer and restored on disposal; size and
+  // pixel ratio are never touched.
+  world.add(new THREE.HemisphereLight(0xd9f2f1, 0x79634c, 1.35))
+  const keyLight = new THREE.DirectionalLight(0xffe2b5, 3.6)
+  keyLight.position.set(-5.2 / PUZZLE_SCALE, 7.6 / PUZZLE_SCALE, 4.8 / PUZZLE_SCALE)
+  keyLight.target.position.set(0, 0.2 / PUZZLE_SCALE, 0.2 / PUZZLE_SCALE)
+  keyLight.castShadow = true
+  keyLight.shadow.mapSize.set(1024, 1024)
+  keyLight.shadow.camera.left = -2.4
+  keyLight.shadow.camera.right = 2.4
+  keyLight.shadow.camera.top = 2.4
+  keyLight.shadow.camera.bottom = -2.4
+  keyLight.shadow.camera.near = 0.1
+  keyLight.shadow.camera.far = 12
+  keyLight.shadow.bias = -0.0005
+  keyLight.shadow.normalBias = 0.012
   world.add(keyLight)
-  const rimLight = new THREE.DirectionalLight(0x63d7d0, 2.4)
-  rimLight.position.set(0.8, 0.5, -0.6)
-  world.add(rimLight)
-  const fillLight = new THREE.DirectionalLight(0xe9fff9, 2.1)
-  fillLight.position.set(0, 0.65, 1)
+  world.add(keyLight.target)
+  const fillLight = new THREE.DirectionalLight(0x9ed8e2, 1.25)
+  fillLight.position.set(5.4 / PUZZLE_SCALE, 4.4 / PUZZLE_SCALE, -4.5 / PUZZLE_SCALE)
   world.add(fillLight)
+  const rimLight = new THREE.DirectionalLight(0xfff4d7, 0.7)
+  rimLight.position.set(0.5 / PUZZLE_SCALE, 3.2 / PUZZLE_SCALE, -5.5 / PUZZLE_SCALE)
+  world.add(rimLight)
+  const lighthouseGlow = new THREE.PointLight(0xffbd68, 1.15, 3.5 / PUZZLE_SCALE, 2)
+  lighthouseGlow.position.set(-1.55 / PUZZLE_SCALE, 1.76 / PUZZLE_SCALE, -0.95 / PUZZLE_SCALE)
+  world.add(lighthouseGlow)
 
-  // ----- Sea ----------------------------------------------------------------------
-  const seaGeometry = new THREE.PlaneGeometry(0.94, 0.7, 48, 36)
-  seaGeometry.rotateX(-Math.PI / 2)
-  const seaPosition = seaGeometry.attributes.position
-  const seaVertexCount = seaPosition.count
-  const seaBaseX = new Float32Array(seaVertexCount)
-  const seaBaseZ = new Float32Array(seaVertexCount)
-  const seaColors = new Float32Array(seaVertexCount * 3)
-  const deepColor = new THREE.Color(0x0f657b)
-  const shallowColor = new THREE.Color(0x54c6bf)
-  const tempColor = new THREE.Color()
+  // ----- Game overlays ------------------------------------------------------------
+  const overlay = new THREE.Group()
+  world.add(overlay)
 
-  for (let i = 0; i < seaVertexCount; i += 1) {
-    const x = seaPosition.getX(i) as number
-    const z = seaPosition.getZ(i) as number
-    seaBaseX[i] = x
-    seaBaseZ[i] = z
-    const shallow = 1 - smoothstep(COAST_Z, 0.34, z)
-    tempColor.copy(deepColor).lerp(shallowColor, shallow * 0.78)
-    seaColors[i * 3] = tempColor.r
-    seaColors[i * 3 + 1] = tempColor.g
-    seaColors[i * 3 + 2] = tempColor.b
-  }
-  seaGeometry.setAttribute('color', new THREE.BufferAttribute(seaColors, 3))
-  const seaMaterial = new THREE.MeshStandardMaterial({
-    vertexColors: true,
-    roughness: 0.32,
-    metalness: 0.04,
-    flatShading: true,
+  // Small target ticks replace the old rings and labels. They stay readable at phone size and
+  // only take the result colours while the wave lens is on.
+  const targetMarks: Array<{ material: Material; side: 'west' | 'east'; index: number }> = []
+  const targetMarkGeometry = new THREE.CircleGeometry(0.017, 4)
+  const targetBackingGeometry = new THREE.CircleGeometry(0.019, 4)
+  const targetBackingMaterial = new THREE.MeshBasicMaterial({
+    color: 0x082a32,
+    transparent: true,
+    opacity: 0.62,
     side: THREE.DoubleSide,
+    depthWrite: false,
+    depthTest: false,
   })
-  const sea = new THREE.Mesh(seaGeometry, seaMaterial)
-  sea.position.y = 0.014
-  world.add(sea)
-
-  function shelterAt(x: number, z: number) {
-    return wavePieces.some((piece) => pieceSheltersPoint(piece, x, z))
-  }
-
-  function waterHeight(x: number, z: number, time: number) {
-    const openSea = 0.55 + 0.45 * smoothstep(COAST_Z, 0.3, z)
-    const baseline = 0.033 * openSea
-    const calm = shelterAt(x, z) ? 0.14 : 1
-    const amplitude = baseline * calm
-    // The swell travels towards negative z. The same phase runs across the whole miniature.
-    const swell =
-      Math.sin(z * 34 + time * 1.8 + x * 2.4) * 0.58 +
-      Math.sin(z * 51 + time * 2.4 + x * 4.9 + 1.2) * 0.27 +
-      Math.sin(z * 23 + time * 1.3 - x * 3.1 + 0.5) * 0.15
-    return amplitude * swell
-  }
-
-  const foamBase: Array<{ x: number; z: number }> = []
-  for (let i = 0; i < 34; i += 1) {
-    const x = -0.42 + (i / 33) * 0.84
-    foamBase.push({ x, z: TARGET_Z + 0.015 + Math.sin(i * 2.4) * 0.012 })
-  }
-  for (let i = 0; i < 24; i += 1) {
-    const x = -0.4 + ((i * 37) % 100) / 125
-    const z = -0.04 + ((i * 53) % 100) / 280
-    foamBase.push({ x, z })
-  }
-  const foamGeometry = new THREE.BufferGeometry()
-  foamGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(foamBase.length * 3), 3))
-  const foam = new THREE.Points(
-    foamGeometry,
-    new THREE.PointsMaterial({ color: 0xf2fff8, size: 0.008, transparent: true, opacity: 0.72, depthWrite: false }),
-  )
-  foam.position.y = 0.021
-  world.add(foam)
-
-  animated.push((time) => {
-    const position = seaGeometry.attributes.position
-    for (let i = 0; i < seaVertexCount; i += 1) {
-      position.setY(i, waterHeight(seaBaseX[i], seaBaseZ[i], time))
-    }
-    position.needsUpdate = true
-    seaGeometry.computeVertexNormals()
-
-    const foamPosition = foamGeometry.attributes.position
-    for (let i = 0; i < foamBase.length; i += 1) {
-      const point = foamBase[i]
-      foamPosition.setXYZ(i, point.x, waterHeight(point.x, point.z, time) + 0.009, point.z)
-    }
-    foamPosition.needsUpdate = true
-  })
-
-  // ----- Base, land and beaches ---------------------------------------------------
-  const basePlate = new THREE.Mesh(
-    new THREE.BoxGeometry(1.0, 0.022, 0.8),
-    standardMaterial(THREE, 0xd8bd86, { roughness: 0.97 }),
-  )
-  basePlate.position.y = -0.012
-  world.add(basePlate)
-  const baseRim = new THREE.Mesh(
-    new THREE.BoxGeometry(1.02, 0.008, 0.82),
-    standardMaterial(THREE, 0x0a3c4b, { roughness: 0.9 }),
-  )
-  baseRim.position.y = -0.028
-  world.add(baseRim)
-
-  const land = new THREE.Mesh(
-    new THREE.BoxGeometry(0.94, 0.02, 0.18),
-    standardMaterial(THREE, 0xe8ca88, { roughness: 0.98 }),
-  )
-  land.position.set(0, 0.02, -0.29)
-  world.add(land)
-  const green = new THREE.Mesh(
-    new THREE.BoxGeometry(0.92, 0.024, 0.075),
-    standardMaterial(THREE, 0x5ca46d, { roughness: 0.96 }),
-  )
-  green.position.set(0, 0.031, -0.345)
-  world.add(green)
-
-  const beachMaterial = standardMaterial(THREE, 0xf1d799, { roughness: 0.98 })
-  for (const side of [-1, 1]) {
-    const beach = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.012, 0.042), beachMaterial)
-    beach.position.set(side * 0.26, 0.034, COAST_Z + 0.005)
-    world.add(beach)
-  }
-
-  const westLabel = makeLabel(THREE, 'West beach', 0x0b6e70)
-  westLabel.position.set(-0.26, 0.085, -0.265)
-  westLabel.scale.set(0.12, 0.06, 1)
-  world.add(westLabel)
-  const eastLabel = makeLabel(THREE, 'East beach', 0x0b6e70)
-  eastLabel.position.set(0.26, 0.085, -0.265)
-  eastLabel.scale.set(0.12, 0.06, 1)
-  world.add(eastLabel)
-
-  // A few land shapes make the coastline read as a place rather than a diagram.
-  const shrubMaterial = standardMaterial(THREE, 0x317953, { roughness: 0.98 })
-  for (const [x, z, size] of [
-    [-0.16, -0.33, 0.022],
-    [-0.09, -0.36, 0.017],
-    [0.05, -0.34, 0.02],
-    [0.17, -0.37, 0.018],
-    [0.33, -0.33, 0.016],
-  ]) {
-    const shrub = new THREE.Mesh(new THREE.IcosahedronGeometry(size, 0), shrubMaterial)
-    shrub.position.set(x, 0.043 + size * 0.5, z)
-    world.add(shrub)
-  }
-
-  // ----- Target marks -------------------------------------------------------------
-  const targetRingGeometry = new THREE.RingGeometry(0.006, 0.011, 18)
-  for (const values of [WEST_TARGET_X, EAST_TARGET_X]) {
-    for (const x of values) {
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xf6e6b8,
-        transparent: true,
-        opacity: 0.92,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-      })
-      const ring = new THREE.Mesh(targetRingGeometry, material)
-      ring.rotation.x = -Math.PI / 2
-      ring.position.set(x, 0.038, TARGET_Z)
-      world.add(ring)
-    }
-  }
-
-  // ----- Lenses -------------------------------------------------------------------
-  const waveLens = new THREE.Group()
-  waveLens.position.y = 0.045
-  world.add(waveLens)
-  const riskRingGeometry = new THREE.RingGeometry(0.011, 0.018, 22)
-  const riskMarkers: Array<{ material: any; side: 'west' | 'east'; index: number }> = []
+  const targetRoot = new THREE.Group()
+  targetRoot.name = 'target-marks'
+  overlay.add(targetRoot)
   for (const [side, values] of [
     ['west', WEST_TARGET_X],
     ['east', EAST_TARGET_X],
   ] as const) {
     values.forEach((x, index) => {
+      const backing = new THREE.Mesh(targetBackingGeometry, targetBackingMaterial)
+      backing.rotation.x = -Math.PI / 2
+      backing.position.set(x, TARGET_MARK_Y - 0.0005, TARGET_Z)
+      backing.renderOrder = 5
+      targetRoot.add(backing)
       const material = new THREE.MeshBasicMaterial({
-        color: 0xd45a59,
+        color: NEUTRAL_MARK_COLOR,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.35,
         side: THREE.DoubleSide,
         depthWrite: false,
+        depthTest: false,
       })
-      const ring = new THREE.Mesh(riskRingGeometry, material)
-      ring.rotation.x = -Math.PI / 2
-      ring.position.set(x, 0.002, TARGET_Z)
-      waveLens.add(ring)
-      riskMarkers.push({ material, side, index })
+      const mark = new THREE.Mesh(targetMarkGeometry, material)
+      mark.rotation.x = -Math.PI / 2
+      mark.position.set(x, TARGET_MARK_Y, TARGET_Z)
+      mark.renderOrder = 6
+      targetRoot.add(mark)
+      targetMarks.push({ material, side, index })
     })
   }
 
+  const waveLens = new THREE.Group()
+  waveLens.name = 'wave-lens'
+  waveLens.visible = false
+  overlay.add(waveLens)
   const arrowShape = new THREE.Shape()
   arrowShape.moveTo(0, 0.03)
   arrowShape.lineTo(0.018, -0.012)
@@ -337,178 +236,169 @@ export function createBreakWavesScene(
   const arrowGeometry = new THREE.ShapeGeometry(arrowShape)
   arrowGeometry.rotateX(-Math.PI / 2)
   const arrowMaterial = new THREE.MeshBasicMaterial({
-    color: 0xf7f0d0,
+    color: 0xfff3d7,
     transparent: true,
-    opacity: 0.8,
+    opacity: 0.42,
     side: THREE.DoubleSide,
     depthWrite: false,
+    depthTest: false,
   })
-  for (const x of [-0.36, -0.2, 0, 0.2, 0.36]) {
-    for (const z of [0.23, 0.11]) {
-      const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial)
-      arrow.position.set(x, 0.002, z)
-      waveLens.add(arrow)
-    }
+  for (const x of [-0.32, -0.16, 0, 0.16, 0.32]) {
+    const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial)
+    arrow.position.set(x, 0.062, 0.16)
+    arrow.renderOrder = 5
+    waveLens.add(arrow)
   }
 
   const seabedLens = new THREE.Group()
-  seabedLens.position.y = 0.043
-  world.add(seabedLens)
+  seabedLens.name = 'seabed-lens'
+  seabedLens.visible = false
+  overlay.add(seabedLens)
   const corridorMaterial = new THREE.MeshBasicMaterial({
-    color: 0x68d8c7,
+    color: LENS_COLOR,
     transparent: true,
-    opacity: 0.2,
+    opacity: 0.1,
     side: THREE.DoubleSide,
     depthWrite: false,
+    depthTest: false,
   })
   const corridor = new THREE.Mesh(
     new THREE.PlaneGeometry(CORRIDOR_HALF_WIDTH * 2, WATER.maxZ - WATER.minZ),
     corridorMaterial,
   )
   corridor.rotation.x = -Math.PI / 2
-  corridor.position.set(0, 0, (WATER.maxZ + WATER.minZ) / 2)
+  corridor.position.set(0, 0.05, (WATER.maxZ + WATER.minZ) / 2)
+  corridor.renderOrder = 4
   seabedLens.add(corridor)
-  const corridorEdgeMaterial = new THREE.MeshBasicMaterial({ color: 0xe8fff5, transparent: true, opacity: 0.72 })
-  for (const x of [-CORRIDOR_HALF_WIDTH, CORRIDOR_HALF_WIDTH]) {
-    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.002, WATER.maxZ - WATER.minZ), corridorEdgeMaterial)
-    edge.position.set(x, 0.002, (WATER.maxZ + WATER.minZ) / 2)
-    seabedLens.add(edge)
-  }
-  const buildEdgeMaterial = new THREE.MeshBasicMaterial({ color: 0x8fe5d9, transparent: true, opacity: 0.72 })
-  for (const x of [WATER.minX, WATER.maxX]) {
-    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.002, WATER.maxZ - WATER.minZ), buildEdgeMaterial)
-    edge.position.set(x, 0.002, (WATER.maxZ + WATER.minZ) / 2)
-    seabedLens.add(edge)
-  }
-  for (const z of [WATER.minZ, WATER.maxZ]) {
-    const edge = new THREE.Mesh(new THREE.BoxGeometry(WATER.maxX - WATER.minX, 0.002, 0.003), buildEdgeMaterial)
-    edge.position.set(0, 0.002, z)
-    seabedLens.add(edge)
-  }
-  const corridorLabel = makeLabel(THREE, 'Boat entrance', 0x0b6e70)
-  corridorLabel.position.set(0, 0.09, 0.03)
-  corridorLabel.scale.set(0.13, 0.065, 1)
-  seabedLens.add(corridorLabel)
-
-  // ----- Boat ---------------------------------------------------------------------
-  const boat = new THREE.Group()
-  boat.position.set(0, 0.048, -0.13)
-  world.add(boat)
-  const hull = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.018, 0.035, 3, 6),
-    standardMaterial(THREE, 0xc23a4f, { roughness: 0.8 }),
-  )
-  hull.rotation.z = Math.PI / 2
-  hull.scale.y = 0.6
-  boat.add(hull)
-  const mast = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.0025, 0.0025, 0.075, 5),
-    standardMaterial(THREE, 0x7d4f2c, { roughness: 1 }),
-  )
-  mast.position.y = 0.04
-  boat.add(mast)
-  const sailGeometry = new THREE.BufferGeometry()
-  sailGeometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.018, 0, 0.036, 0.068, 0, 0, 0.068, 0], 3))
-  sailGeometry.computeVertexNormals()
-  const sail = new THREE.Mesh(
-    sailGeometry,
-    new THREE.MeshStandardMaterial({ color: 0xf7e7bd, side: THREE.DoubleSide, roughness: 0.9 }),
-  )
-  sail.position.y = 0.005
-  boat.add(sail)
-  animated.push((time) => {
-    boat.position.y = 0.048 + Math.sin(time * 1.5) * 0.004
-    boat.rotation.z = Math.sin(time * 1.2) * 0.025
+  const corridorEdgeMaterial = new THREE.MeshBasicMaterial({
+    color: 0xe8fff5,
+    transparent: true,
+    opacity: 0.82,
+    depthWrite: false,
+    depthTest: false,
   })
-
-  // ----- Pieces -------------------------------------------------------------------
-  let pieceRoot = new THREE.Group()
-  world.add(pieceRoot)
-  let piecePickMeshes: Object3D[] = []
-  const pieceVisuals = new Map<string, { group: Object3D; ring: Object3D }>()
-
-  function buildPieceVisual(piece: BreakWavesPiece) {
-    const group = new THREE.Group()
-    group.position.set(piece.x, 0.05, piece.z)
-    // Three's Y rotation uses the opposite sense from the 2D marker rotation helper.
-    group.rotation.y = -(piece.rotation * Math.PI) / 180
-
-    const base = new THREE.Mesh(
-      new THREE.BoxGeometry(PIECE_LENGTH, 0.012, PIECE_WIDTH + 0.01),
-      standardMaterial(THREE, 0x4d595d, { roughness: 1 }),
-    )
-    base.position.y = 0.002
-    group.add(base)
-
-    const stoneMaterial = standardMaterial(THREE, 0x939d9b, { roughness: 0.95 })
-    const stoneLight = standardMaterial(THREE, 0xb9b6a7, { roughness: 0.95 })
-    for (let i = 0; i < 4; i += 1) {
-      const block = new THREE.Mesh(
-        new THREE.BoxGeometry(0.038, 0.024, i === 1 ? 0.038 : 0.032),
-        i % 2 === 0 ? stoneMaterial : stoneLight,
-      )
-      block.position.set((i - 1.5) * 0.041, 0.015, (i % 2 === 0 ? 1 : -1) * 0.002)
-      block.rotation.y = (i - 1.5) * 0.08
-      group.add(block)
-    }
-
-    const ownerStrip = new THREE.Mesh(
-      new THREE.BoxGeometry(PIECE_LENGTH, 0.006, 0.008),
-      new THREE.MeshStandardMaterial({
-        color: OWNER_COLOR[piece.owner],
-        emissive: OWNER_COLOR[piece.owner],
-        emissiveIntensity: 0.18,
-        roughness: 0.6,
-      }),
-    )
-    ownerStrip.position.set(0, 0.035, 0.014)
-    group.add(ownerStrip)
-
-    const label = makeLabel(THREE, piece.id.toUpperCase(), OWNER_COLOR[piece.owner])
-    label.position.set(0, 0.095, 0)
-    label.scale.set(0.075, 0.0375, 1)
-    group.add(label)
-
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.085, 0.1, 30),
-      new THREE.MeshBasicMaterial({
-        color: OWNER_COLOR[piece.owner],
-        transparent: true,
-        opacity: 0.92,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-      }),
-    )
-    ring.rotation.x = -Math.PI / 2
-    ring.position.y = -0.006
-    ring.visible = piece.id === selectedId
-    group.add(ring)
-
-    if (piece.owner === mySide) {
-      const pick = new THREE.Mesh(
-        new THREE.BoxGeometry(PIECE_LENGTH + 0.035, 0.07, PIECE_WIDTH + 0.045),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }),
-      )
-      pick.position.y = 0.02
-      pick.userData.pieceId = piece.id
-      group.add(pick)
-      piecePickMeshes.push(pick)
-    }
-
-    pieceRoot.add(group)
-    pieceVisuals.set(piece.id, { group, ring })
+  for (const x of [-CORRIDOR_HALF_WIDTH, CORRIDOR_HALF_WIDTH]) {
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.002, WATER.maxZ - WATER.minZ), corridorEdgeMaterial)
+    edge.position.set(x, 0.052, (WATER.maxZ + WATER.minZ) / 2)
+    edge.renderOrder = 5
+    seabedLens.add(edge)
   }
 
-  function rebuildPieces(pieces: BreakWavesPiece[]) {
-    world.remove(pieceRoot)
-    disposeObject(pieceRoot)
-    pieceRoot = new THREE.Group()
-    world.add(pieceRoot)
+  // The enlarged island sea extends beyond the authoritative buildable rectangle. The seabed lens
+  // therefore also shows the exact WATER boundary (and a faint area wash), distinct from the central
+  // boat corridor. It is a lens overlay only; placement rules and the puzzle rectangle are unchanged.
+  const buildableWidth = WATER.maxX - WATER.minX
+  const buildableDepth = WATER.maxZ - WATER.minZ
+  const buildableCenterZ = (WATER.maxZ + WATER.minZ) / 2
+  const buildableAreaMaterial = new THREE.MeshBasicMaterial({
+    color: 0xeaf6ef,
+    transparent: true,
+    opacity: 0.035,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    depthTest: false,
+  })
+  const buildableArea = new THREE.Mesh(
+    new THREE.PlaneGeometry(buildableWidth, buildableDepth),
+    buildableAreaMaterial,
+  )
+  buildableArea.name = 'buildable-water-area'
+  buildableArea.rotation.x = -Math.PI / 2
+  buildableArea.position.set(0, 0.044, buildableCenterZ)
+  buildableArea.renderOrder = 3
+  seabedLens.add(buildableArea)
+  const buildableBoundaryMaterial = new THREE.LineBasicMaterial({
+    color: 0xeaf6ef,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false,
+    depthTest: false,
+  })
+  const buildableBoundaryGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(WATER.minX, 0, WATER.minZ),
+    new THREE.Vector3(WATER.maxX, 0, WATER.minZ),
+    new THREE.Vector3(WATER.maxX, 0, WATER.maxZ),
+    new THREE.Vector3(WATER.minX, 0, WATER.maxZ),
+  ])
+  const buildableBoundary = new THREE.LineLoop(buildableBoundaryGeometry, buildableBoundaryMaterial)
+  buildableBoundary.name = 'buildable-water-boundary'
+  buildableBoundary.position.y = 0.055
+  buildableBoundary.renderOrder = 5
+  seabedLens.add(buildableBoundary)
+
+  // The pick surface is exactly the authoritative water rectangle. It is invisible but is hit by
+  // the same raycaster and world transform as the scenery and construction.
+  const pickGeometry = new THREE.PlaneGeometry(WATER.maxX - WATER.minX, WATER.maxZ - WATER.minZ)
+  pickGeometry.rotateX(-Math.PI / 2)
+  const waterPick = new THREE.Mesh(
+    pickGeometry,
+    new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }),
+  )
+  waterPick.position.set((WATER.minX + WATER.maxX) / 2, WATER_PICK_Y, (WATER.minZ + WATER.maxZ) / 2)
+  overlay.add(waterPick)
+
+  // ----- Construction overlays ----------------------------------------------------
+  let pieceRoot = new THREE.Group()
+  overlay.add(pieceRoot)
+  let piecePickMeshes: Object3D[] = []
+  const pieceVisuals = new Map<string, { outline: Object3D; material: Material }>()
+  const pickGeometryShared = new THREE.BoxGeometry(PIECE_LENGTH + 0.035, 0.07, PIECE_WIDTH + 0.045)
+  const pickMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  })
+  const outlineGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-PIECE_LENGTH / 2 - 0.002, 0, -PIECE_WIDTH / 2 - 0.003),
+    new THREE.Vector3(PIECE_LENGTH / 2 + 0.002, 0, -PIECE_WIDTH / 2 - 0.003),
+    new THREE.Vector3(PIECE_LENGTH / 2 + 0.002, 0, PIECE_WIDTH / 2 + 0.003),
+    new THREE.Vector3(-PIECE_LENGTH / 2 - 0.002, 0, PIECE_WIDTH / 2 + 0.003),
+  ])
+  const ownerOutlineMaterials: Record<Side, Material> = {
+    a: new THREE.LineBasicMaterial({
+      color: SELECTION_COLOR.a,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      depthTest: false,
+    }),
+    b: new THREE.LineBasicMaterial({
+      color: SELECTION_COLOR.b,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      depthTest: false,
+    }),
+  }
+
+  function rebuildPieceOverlays(pieces: BreakWavesPiece[]) {
+    pieceRoot.clear()
     pieceVisuals.clear()
     piecePickMeshes = []
     for (const piece of pieces) {
-      if (piece.placed) buildPieceVisual(piece)
+      if (!piece.placed || piece.owner !== mySide) continue
+      const group = new THREE.Group()
+      group.position.set(piece.x, 0, piece.z)
+      group.rotation.y = -(piece.rotation * Math.PI) / 180
+      const outline = new THREE.LineLoop(outlineGeometry, ownerOutlineMaterials[piece.owner])
+      outline.position.y = 0.056
+      outline.visible = piece.id === selectedId
+      outline.renderOrder = 8
+      group.add(outline)
+      const pick = new THREE.Mesh(pickGeometryShared, pickMaterial)
+      pick.position.y = 0.02
+      pick.userData.pieceId = piece.id
+      group.add(pick)
+      pieceRoot.add(group)
+      piecePickMeshes.push(pick)
+      pieceVisuals.set(piece.id, { outline, material: ownerOutlineMaterials[piece.owner] })
     }
+  }
+
+  function rebuildPieces(pieces: BreakWavesPiece[]) {
+    rebuildPieceOverlays(pieces)
+    model.setPieces(pieces)
   }
 
   function setPieces(pieces: BreakWavesPiece[]) {
@@ -523,13 +413,14 @@ export function createBreakWavesScene(
     if (signature === waveSignature) return
     waveSignature = signature
     wavePieces = pieces
+    const sheltered = (values: readonly number[]) =>
+      values.filter((x) => pieces.some((piece) => pieceSheltersPoint(piece, x, TARGET_Z))).length / values.length
+    model.setShoreMood(sheltered(WEST_TARGET_X), sheltered(EAST_TARGET_X))
   }
 
   function setSelected(pieceId: PieceId | null) {
     selectedId = pieceId
-    for (const [id, visual] of pieceVisuals) {
-      visual.ring.visible = id === pieceId
-    }
+    for (const [id, visual] of pieceVisuals) visual.outline.visible = id === pieceId
   }
 
   function setGhost(nextGhost: GhostPiece | null) {
@@ -539,52 +430,66 @@ export function createBreakWavesScene(
     }
     if (!ghost) {
       const group = new THREE.Group()
-      const material = new THREE.MeshBasicMaterial({
+      ghostFillMaterial = new THREE.MeshBasicMaterial({
         color: 0xffe7a6,
         transparent: true,
-        opacity: 0.56,
-        wireframe: true,
+        opacity: 0.18,
+        side: THREE.DoubleSide,
         depthWrite: false,
       })
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(PIECE_LENGTH, 0.012, PIECE_WIDTH), material)
-      mesh.position.y = 0.012
-      group.add(mesh)
-      const ring = new THREE.Mesh(
-        new THREE.RingGeometry(0.085, 0.1, 30),
-        new THREE.MeshBasicMaterial({
-          color: 0xffe7a6,
-          transparent: true,
-          opacity: 0.8,
-          side: THREE.DoubleSide,
-          depthWrite: false,
-        }),
-      )
-      ring.rotation.x = -Math.PI / 2
-      ring.position.y = 0.004
-      group.add(ring)
+      const fillGeometry = new THREE.PlaneGeometry(PIECE_LENGTH, PIECE_WIDTH)
+      fillGeometry.rotateX(-Math.PI / 2)
+      const fill = new THREE.Mesh(fillGeometry, ghostFillMaterial)
+      fill.position.y = 0.052
+      fill.renderOrder = 7
+      group.add(fill)
+      ghostOutlineMaterial = new THREE.LineBasicMaterial({
+        color: 0xffe7a6,
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+        depthTest: false,
+      })
+      const outline = new THREE.LineLoop(outlineGeometry, ghostOutlineMaterial)
+      outline.position.y = 0.058
+      outline.renderOrder = 8
+      group.add(outline)
       ghost = group
-      world.add(ghost)
+      overlay.add(ghost)
     }
     ghost.visible = true
-    ghost.position.set(nextGhost.x, 0.05, nextGhost.z)
+    ghost.position.set(nextGhost.x, 0, nextGhost.z)
     ghost.rotation.y = -(nextGhost.rotation * Math.PI) / 180
   }
 
+  function applyTargetStyle() {
+    targetBackingMaterial.opacity = activeLens === 'waves' ? 0.62 : 0.22
+    for (const marker of targetMarks) {
+      if (activeLens === 'waves' && evaluation) {
+        const flags = marker.side === 'west' ? evaluation.west_targets : evaluation.east_targets
+        const sheltered = flags[marker.index] ?? false
+        marker.material.color.setHex(sheltered ? SHELTERED_COLOR : EXPOSED_COLOR)
+        marker.material.opacity = 1
+      } else {
+        marker.material.color.setHex(NEUTRAL_MARK_COLOR)
+        marker.material.opacity = 0.35
+      }
+    }
+  }
+
   function setLens(nextLens: LensId | null) {
+    activeLens = nextLens
     waveLens.visible = nextLens === 'waves'
     seabedLens.visible = nextLens === 'seabed'
+    applyTargetStyle()
   }
 
   function setEvaluation(result: BreakWavesResult) {
     evaluation = result
-    for (const marker of riskMarkers) {
-      const flags = marker.side === 'west' ? result.west_targets : result.east_targets
-      const sheltered = flags[marker.index] ?? false
-      marker.material.color.setHex(sheltered ? 0x26836b : 0xd45a59)
-      marker.material.opacity = sheltered ? 0.82 : 1
-    }
-    corridorMaterial.color.setHex(result.corridor_clear ? 0x68d8c7 : 0xd45a59)
-    corridorMaterial.opacity = result.corridor_clear ? 0.2 : 0.3
+    applyTargetStyle()
+    corridorMaterial.color.setHex(result.corridor_clear ? LENS_COLOR : BLOCKED_COLOR)
+    corridorMaterial.opacity = result.corridor_clear ? 0.1 : 0.38
+    corridorEdgeMaterial.color.setHex(result.corridor_clear ? 0xe8fff5 : 0xffa89a)
   }
 
   function setInteractive(live: boolean) {
@@ -592,12 +497,7 @@ export function createBreakWavesScene(
     if (renderer.domElement.style) renderer.domElement.style.cursor = live ? 'pointer' : 'default'
   }
 
-  // The CSS3D layer is unused, so taps reach the WebGL canvas underneath it.
-  if (renderer.domElement.style) {
-    renderer.domElement.style.touchAction = 'none'
-    renderer.domElement.style.cursor = 'default'
-  }
-
+  // ----- Pointer handling ---------------------------------------------------------
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
   let pointerStart: { x: number; y: number } | null = null
@@ -629,40 +529,94 @@ export function createBreakWavesScene(
       return
     }
 
-    const seaHits = raycaster.intersectObject(sea, false)
-    if (seaHits.length > 0) {
-      const local = world.worldToLocal(seaHits[0].point.clone())
+    const waterHits = raycaster.intersectObject(waterPick, false)
+    if (waterHits.length > 0) {
+      const local = world.worldToLocal(waterHits[0].point.clone())
+      // The pick plane is exactly the authoritative rectangle; keep a tiny numeric guard.
+      if (
+        local.x < WATER.minX - 0.0001 ||
+        local.x > WATER.maxX + 0.0001 ||
+        local.z < WATER.minZ - 0.0001 ||
+        local.z > WATER.maxZ + 0.0001
+      ) {
+        return
+      }
       callbacks.onWaterTap({ x: local.x, z: local.z })
     }
   }
 
+  const previousCursor = renderer.domElement.style?.cursor ?? ''
+  const previousTouchAction = renderer.domElement.style?.touchAction ?? ''
+  if (renderer.domElement.style) {
+    renderer.domElement.style.touchAction = 'none'
+    renderer.domElement.style.cursor = 'default'
+  }
   renderer.domElement.addEventListener('pointerdown', pointerDown)
   renderer.domElement.addEventListener('pointerup', pointerUp)
   renderer.domElement.addEventListener('pointercancel', pointerCancel)
 
+  // ----- Animation and disposal ---------------------------------------------------
   function update(timeSeconds: number) {
-    for (const animation of animated) animation(timeSeconds)
+    if (disposed) return
+    const visualTime = reducedMotion ? 0 : timeSeconds
+    model.update(visualTime, 1)
     if (selectedId !== null) {
       const selected = pieceVisuals.get(selectedId)
-      if (selected) selected.ring.scale.setScalar(1 + Math.sin(timeSeconds * 4.2) * 0.08)
+      if (selected) selected.material.opacity = 0.55 + Math.sin(visualTime * 4.2) * 0.22
     }
-    if (ghost?.visible) ghost.position.y = 0.05 + Math.sin(timeSeconds * 3.4) * 0.002
+    if (ghost?.visible && ghostFillMaterial && ghostOutlineMaterial) {
+      ghostFillMaterial.opacity = 0.14 + Math.sin(visualTime * 3.4) * 0.04
+      ghostOutlineMaterial.opacity = 0.72 + Math.sin(visualTime * 3.4) * 0.18
+    }
     if (evaluation && !evaluation.corridor_clear) {
-      corridorMaterial.opacity = 0.22 + Math.sin(timeSeconds * 4.5) * 0.1
+      corridorMaterial.opacity = 0.38 + Math.sin(visualTime * 4.5) * 0.05
     }
   }
 
-  function dispose() {
-    renderer.domElement.removeEventListener('pointerdown', pointerDown)
-    renderer.domElement.removeEventListener('pointerup', pointerUp)
-    renderer.domElement.removeEventListener('pointercancel', pointerCancel)
-    disposeObject(world)
-    anchorGroup.remove(world)
-  }
+  // The renderer belongs to the caller. Only presentation state is touched here and restored on
+  // disposal; the canvas, camera and WebGL context are never created, stopped or lost.
+  const previousToneMapping = renderer.toneMapping
+  const previousExposure = renderer.toneMappingExposure
+  const previousShadowMapEnabled = renderer.shadowMap.enabled
+  const previousShadowMapType = renderer.shadowMap.type
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.03
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
+  setView('oblique')
   setInteractive(false)
   setLens(null)
   setWavePieces([])
+
+  function dispose() {
+    if (disposed) return
+    disposed = true
+    renderer.domElement.removeEventListener('pointerdown', pointerDown)
+    renderer.domElement.removeEventListener('pointerup', pointerUp)
+    renderer.domElement.removeEventListener('pointercancel', pointerCancel)
+    model.dispose()
+    disposeObject(overlay)
+    // These overlay resources may be unattached when a player has no placed pieces or ghost.
+    pickGeometryShared.dispose()
+    pickMaterial.dispose()
+    outlineGeometry.dispose()
+    ownerOutlineMaterials.a.dispose()
+    ownerOutlineMaterials.b.dispose()
+    ghostFillMaterial?.dispose?.()
+    ghostOutlineMaterial?.dispose?.()
+    keyLight.shadow.map?.dispose?.()
+    keyLight.shadow.map = null
+    anchorGroup.remove(world)
+    if (renderer.domElement.style) {
+      renderer.domElement.style.cursor = previousCursor
+      renderer.domElement.style.touchAction = previousTouchAction
+    }
+    renderer.toneMapping = previousToneMapping
+    renderer.toneMappingExposure = previousExposure
+    renderer.shadowMap.enabled = previousShadowMapEnabled
+    renderer.shadowMap.type = previousShadowMapType
+  }
 
   return {
     update,
@@ -673,6 +627,7 @@ export function createBreakWavesScene(
     setGhost,
     setLens,
     setEvaluation,
+    setView,
     dispose,
   }
 }

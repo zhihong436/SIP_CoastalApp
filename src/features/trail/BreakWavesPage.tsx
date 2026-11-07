@@ -15,7 +15,7 @@ import {
   type BreakWavesResult,
   type PieceId,
 } from './breakWaves'
-import type { GhostPiece, LensId } from './breakWavesScene'
+import type { GhostPiece, LensId, SceneView } from './breakWavesScene'
 import { useBreakWaves } from './useBreakWaves'
 
 interface Props {
@@ -88,6 +88,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   const { state, reload } = useBreakWaves(sessionId)
   const [selectedId, setSelectedId] = useState<PieceId | null>(null)
   const [lensOn, setLensOn] = useState(true)
+  const [view, setView] = useState<SceneView>('oblique')
   const [scanning, setScanning] = useState(false)
   const [help, setHelp] = useState(false)
   const [pending, setPending] = useState<Pending>(null)
@@ -151,6 +152,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
     setSelectedId(null)
     setDismissedTest(null)
     setGhost(null)
+    setView('oblique')
     setPending(null)
     setNotice(null)
     setScanning(false)
@@ -176,6 +178,7 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
       onSelectPiece: (pieceId) => handlerRef.current.select(pieceId),
       onWaterTap: (point) => handlerRef.current.water(point),
     })
+    controller.setView(view)
     controller.setPieces(pieces)
     controller.setWavePieces(waveLayout)
     controller.setSelected(selectedId)
@@ -202,6 +205,10 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
   useEffect(() => {
     arRef.current?.setLens(lensOn ? lensId : null)
   }, [lensOn, lensId])
+
+  useEffect(() => {
+    arRef.current?.setView(view)
+  }, [view])
 
   useEffect(() => {
     arRef.current?.setGhost(ghost)
@@ -571,6 +578,32 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
         <span>{trackingLabel}</span>
       </div>
 
+      {!showResult && cameraRunning && arPhase !== 'starting' && (
+        <>
+          <div
+            className="hunt-view"
+            role="group"
+            aria-labelledby="hunt-view-label"
+            aria-describedby="hunt-view-note"
+          >
+            <span id="hunt-view-label" className="hunt-view__label">
+              View
+            </span>
+            <div className="hunt-view__options">
+              <button type="button" aria-pressed={view === 'oblique'} onClick={() => setView('oblique')}>
+                Oblique
+              </button>
+              <button type="button" aria-pressed={view === 'top'} onClick={() => setView('top')}>
+                Top
+              </button>
+            </div>
+          </div>
+          <p id="hunt-view-note" className="hunt-view__note">
+            Tilts on the card; moving the phone still changes perspective.
+          </p>
+        </>
+      )}
+
       {arPhase === 'scanning' && (
         <div className="hunt__hint" role="status">
           <span aria-hidden="true">◎</span>
@@ -839,6 +872,10 @@ export function BreakWavesPage({ sessionId, matchId }: Props) {
           <p>
             The wave and seabed lenses show different information; both of you can still inspect and build. This is an
             illustrative model. Breakwaters reduce wave energy; they do not stop flooding from higher sea levels.
+          </p>
+          <p>
+            Oblique and Top tilt the miniature on the marker. They do not freeze the camera or guarantee a fixed
+            angle: moving your phone still changes the real perspective.
           </p>
           <button type="button" className="button button--primary button--full" onClick={() => setHelp(false)}>
             Back to the coast

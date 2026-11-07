@@ -12,6 +12,7 @@ export default defineConfig({
         spike: 'spike.html',
         ar: 'ar.html',
         card: 'card.html',
+        diorama: 'diorama.html',
       },
     },
   },

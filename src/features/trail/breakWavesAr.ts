@@ -7,6 +7,7 @@ import {
   type BreakWavesScene,
   type GhostPiece,
   type LensId,
+  type SceneView,
 } from './breakWavesScene'
 
 export type ArPhase =
@@ -76,6 +77,7 @@ export class BreakWavesAr {
   private pendingSelected: PieceId | null = null
   private pendingGhost: GhostPiece | null = null
   private pendingLens: LensId | null = null
+  private pendingView: SceneView = 'oblique'
   private pendingEvaluation: BreakWavesResult | null = null
   private contextLostHandler: (() => void) | null = null
   private resizeHandler: EventListenerOrEventListenerObject | null = null
@@ -90,6 +92,7 @@ export class BreakWavesAr {
 
   private applyPendingState() {
     if (!this.scene) return
+    this.scene.setView(this.pendingView)
     this.scene.setPieces(this.pendingPieces)
     this.scene.setWavePieces(this.pendingWavePieces)
     this.scene.setSelected(this.pendingSelected)
@@ -273,6 +276,11 @@ export class BreakWavesAr {
   setLens(lens: LensId | null) {
     this.pendingLens = lens
     this.scene?.setLens(lens)
+  }
+
+  setView(view: SceneView) {
+    this.pendingView = view
+    this.scene?.setView(view)
   }
 
   setEvaluation(result: BreakWavesResult) {
