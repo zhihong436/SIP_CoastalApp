@@ -114,7 +114,9 @@ export function createBreakWavesScene(
   const world = new THREE.Group()
   // The anchor's plane is XY with Z coming out of the card. Rotating makes Y up, like the experiment.
   world.rotation.x = Math.PI / 2
-  world.scale.setScalar(0.9)
+  // Keep the playable coast large enough to read and tap at normal phone-to-card distance.
+  // This is presentation only: puzzle coordinates, pointer-to-local conversion and saved state stay unchanged.
+  world.scale.setScalar(1.35)
   anchorGroup.add(world)
 
   const animated: Array<(time: number) => void> = []

@@ -95,8 +95,11 @@ the import map those vendor modules need. No CDN or new engine is used.
 - Tracking loss disables construction and shows a recovery message. Saved construction is fetched
   from the database and is not lost when the camera stops.
 - Both phones show the same marker-relative coast and all accepted pieces, coloured and labelled by
-  owner. Player A can toggle a wave/risk lens; player B can toggle a seabed/boat-corridor lens. Both
-  can inspect and build.
+  owner. The miniature is scaled to 1.35 target widths (1.5× the original 0.9) so the coast, piece
+  labels and tap area read at a normal phone-to-card distance. This is presentation only: the world
+  stays centred on the marker, and puzzle coordinates, pointer-to-local conversion and saved layouts
+  are unchanged. Player A can toggle a wave/risk lens; player B can toggle a seabed/boat-corridor
+  lens. Both can inspect and build.
 - The reliable baseline is: select one of your own piece cards, tap the water, then use Rotate 15°
   or Return. A tapped draft ghost and a "saving" note are unconfirmed; only the database-returned
   accepted revision is shown as placed.
@@ -154,6 +157,7 @@ Local, repository and browser checks (not paired acceptance):
 | Synthetic camera lifecycle smoke | Delayed `getUserMedia` cancel released the late track; two start/background cycles ended both tracks, removed video/canvas and removed 2 of 2 captured MindAR resize listeners. SPA navigation ended the live track. Synthetic camera, **not** a phone or paired acceptance. |
 | Focused mocked route-lifecycle check | A delayed session-A parent load was superseded by a session-B legacy page and did not restore the A hunt page after 1.8 s. Starting the synthetic AR camera on A, then making the same in-app route change to B, left the B board visible and showed A's captured track as `ended` with no video/canvas left. Mocked REST/browser evidence, **not** real paired networking or RLS. |
 | Mocked REST render of the hunt screen | Start, scanning, failure result, success result and not-built clue layouts checked at 390×844; start and live build layouts also checked at 320×568, with no horizontal overflow. **Not** an RLS, database, realtime or two-account pass. |
+| Local presentation-sizing harness | Actual scene and tap handler loaded in headless Edge at exact 390×844 and 320×568 viewports with the build sheet present. At the same synthetic marker pose, the sea, target line and piece projections are about 1.5× their former size (piece length 1.51× / 1.51×; target line 1.53× / 1.53×). Water taps returned the same local coordinates before and after (delta 0), and a piece tap selected `a1`. At 1.35 scale the target line stayed above the sheet on both viewports; the playable water band was 100% visible at 390×844 and 92% at 320×568, where a thin near-edge strip sits behind the sheet. **Not** real marker tracking or phone acceptance. |
 | Local PostgreSQL 17 migration and legacy preservation | **Pass.** Fresh PG 17.11 database; existing migrations through `160000` applied; realistic legacy active and lobby fixtures created with the old RPCs; `170000` applied with `ON_ERROR_STOP=1`. Existing session/member/progress JSON was unchanged apart from `game_version = 'legacy'`; row counts unchanged; new lobby sessions were `hunt-v1`. |
 | Local PostgreSQL authoritative actions and geometry | **Pass.** Real authenticated-role calls exercised open, place/rotate/return, shared revisions, ownership denial, invalid/out-of-water/overlap/NaN/missing-input rejection, boat-blocking failure, horizontal pass, rotated pass, vertical exposure and two-piece insufficiency. |
 | Local PostgreSQL RLS, privileges and publication | **Pass.** Progress and action-log RLS enabled; only member SELECT on progress; no client writes or action-log reads; new public RPC grants present; internal helper execute revoked; outsider read count 0; anon denied; `break_waves_progress` present in `supabase_realtime`. |
@@ -264,8 +268,10 @@ matched pair**. Do not use an existing legacy pair for this test.
 2. Print the hunt card from the card page. Both scan it (phone camera or in-app scanner). Confirm
    each sees the stop and the same goal. Confirm the scanner camera closes before AR starts.
 3. Tap **Start AR camera** on both. Allow the rear camera. Point at the printed illustration.
-   Confirm real marker tracking on both phones, a visible coast above the bottom sheet, and at least
-   44 px touch controls.
+   Confirm real marker tracking on both phones, and that the coast, the west/east target lines and
+   all accepted pieces are visibly larger and readable without zooming or panning. At 390×844 and
+   320×568 the target line and most of the near water remain above the build sheet at a natural aim
+   above the sheet. Confirm at least 44 px touch controls.
 4. Confirm A sees the wave/risk lens and B sees the seabed/boat-corridor lens. Toggle each. Confirm
    both can still inspect and select only their own two piece cards.
 5. Place one of A's pieces, then rotate it and move it. Confirm B sees the accepted piece, owner
