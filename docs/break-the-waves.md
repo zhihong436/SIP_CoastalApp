@@ -179,6 +179,12 @@ Lifecycle and UX:
   is exclusively the documented `xrloaded` event (registered before the local `xr.js` is inserted).
   A script load or an existing `window.XR8` global is not treated as ready, because the preloaded
   SLAM chunk may still be loading.
+- The canvas fills the app's dynamic-height viewport even when Three.js writes inline pixel sizes.
+  Before `XR8.run()` and on startup/size callbacks, its drawing-buffer width and height are set from
+  the app's CSS dimensions times device pixel ratio. A ResizeObserver handles rotation and browser
+  toolbar height changes while active, and disconnects on page hide. XR8 retains ownership of
+  camera-feed cropping and tracked projection. This fixes the default 300×150 canvas rectangle,
+  rather than trying to compensate by enlarging the island again.
 - `XrController.pipelineModule()` publishes `camera`, `deviceorientation` and `devicemotion` as
   required permissions. `XR8.run()` is called synchronously in the Start gesture so the engine's
   permission framework can request them. The page does not add a second

@@ -310,6 +310,16 @@ async function boot() {
   updateControls()
 }
 
+function resizeCameraCanvas() {
+  // CSS size alone leaves the default 300×150 drawing buffer in place. XR8 reads these
+  // dimensions to size both the camera feed and its tracked projection on the next frame.
+  const pixelRatio = window.devicePixelRatio || 1
+  const width = Math.max(1, Math.round(app.clientWidth * pixelRatio))
+  const height = Math.max(1, Math.round(app.clientHeight * pixelRatio))
+  if (canvas.width !== width) canvas.width = width
+  if (canvas.height !== height) canvas.height = height
+}
+
 function addPipelineModules(token: number) {
   XR8.XrController.configure({ disableWorldTracking: false, scale: 'responsive' })
   const custom: EngineModule = {
@@ -323,6 +333,7 @@ function addPipelineModules(token: number) {
       // this abandoned attempt; a newer generation may own the engine now.
       if (token !== sessionToken) return
       try {
+        resizeCameraCanvas()
         setupScene(token)
         starting = false
         running = true
@@ -349,6 +360,9 @@ function addPipelineModules(token: number) {
           safeErrorMessage(error),
         )
       }
+    },
+    onCanvasSizeChange: () => {
+      if (token === sessionToken) resizeCameraCanvas()
     },
     onUpdate: ({ processCpuResult }: any) => {
       if (token !== sessionToken) return
@@ -831,6 +845,7 @@ async function startSession() {
   if (token !== sessionToken) return
 
   try {
+    resizeCameraCanvas()
     runRequested = true
     const result = XR8.run({
       canvas,
@@ -917,6 +932,14 @@ function onPageHide() {
 function onPageShow(event: PageTransitionEvent) {
   if (event.persisted) window.location.reload()
 }
+
+// The app follows 100dvh, including Safari toolbar changes and device rotation. Observe its
+// layout rather than the canvas, whose pixel attributes are also written by the engine.
+const viewportObserver = new ResizeObserver(() => {
+  if (starting || running) resizeCameraCanvas()
+})
+viewportObserver.observe(app)
+window.addEventListener('pagehide', () => viewportObserver.disconnect(), { once: true })
 
 canvas.addEventListener('pointerdown', onCanvasPointerDown)
 canvas.addEventListener('pointermove', onCanvasPointerMove)
