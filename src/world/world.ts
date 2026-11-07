@@ -29,7 +29,7 @@ const exposedPieces: BreakWavesPiece[] = []
 
 const ENGINE_TIMEOUT_MS = 30_000
 const START_TIMEOUT_MS = 45_000
-const MODEL_SCALE = 0.24
+const MODEL_SCALE = 0.48
 const MODEL_BASE_Y = 0.48 * MODEL_SCALE + 0.002
 const INITIAL_CAMERA = { x: 0, y: 1.45, z: 2.2 }
 const TAP_MOVE_LIMIT = 12
@@ -485,10 +485,11 @@ function setupLights() {
   key.target.position.set(0, 0.2 * scale, 0.2 * scale)
   key.castShadow = true
   key.shadow.mapSize.set(1024, 1024)
-  key.shadow.camera.left = -1.25
-  key.shadow.camera.right = 1.25
-  key.shadow.camera.top = 1.25
-  key.shadow.camera.bottom = -1.25
+  const shadowExtent = MODEL_SCALE * 5.2
+  key.shadow.camera.left = -shadowExtent
+  key.shadow.camera.right = shadowExtent
+  key.shadow.camera.top = shadowExtent
+  key.shadow.camera.bottom = -shadowExtent
   key.shadow.camera.near = 0.1
   key.shadow.camera.far = 8
   key.shadow.bias = -0.00035

@@ -167,8 +167,10 @@ engine drives a real perspective camera; the page sets only an initial floor-fac
 establish the tracking origin. On a valid tap the island is placed once on the estimated floor and
 yawed once so its seaward `+Z` side faces the camera. Later phone motion changes the real
 perspective; there is no fixed camera, orbit, artificial model tilt or per-frame camera-facing
-transform. The island uses a fixed 0.24 responsive-tracker scale, chosen for a phone held a step or
-two away. It is not labelled in metres; users should step back if framing cannot fit.
+transform. The island uses a fixed 0.48 responsive-tracker scale, doubled from the initial trial
+following phone feedback that it occupied too little of the screen. Its floor offset and lighting
+positions follow that scale, and shadow coverage scales with it. It is not labelled in metres.
+Step back if the enlarged island does not fit the camera view.
 
 Lifecycle and UX:
 
