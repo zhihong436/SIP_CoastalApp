@@ -167,10 +167,12 @@ engine drives a real perspective camera; the page sets only an initial floor-fac
 establish the tracking origin. On a valid tap the island is placed once on the estimated floor and
 yawed once so its seaward `+Z` side faces the camera. Later phone motion changes the real
 perspective; there is no fixed camera, orbit, artificial model tilt or per-frame camera-facing
-transform. The island uses a fixed 0.48 responsive-tracker scale, doubled from the initial trial
-following phone feedback that it occupied too little of the screen. Its floor offset and lighting
-positions follow that scale, and shadow coverage scales with it. It is not labelled in metres.
-Step back if the enlarged island does not fit the camera view.
+transform. The Island size slider changes the model live from 50% to 200% in 5% steps. The smaller
+default is 100%, a responsive-tracker scale of 0.24, half the preceding enlarged trial. It changes
+only model size and the corresponding floor offset, light rig and shadow coverage. Anchor X/Z,
+facing direction, tracked camera and example state do not change. The selection survives Stop and
+Start on this page, and a page reload restores 100%. The percentage is relative size, not metres.
+Step back or reduce the slider if the island does not fit the camera view.
 
 Lifecycle and UX:
 
@@ -244,8 +246,10 @@ branch-preview path is `/world.html` on the existing preview host.
    the estimated floor, its seaward side faces the phone, and it does not follow the camera.
    Sidestep slowly, then walk around the island for 60 s. Note jitter, drift, loss/recovery and
    whether recovery reuses the same anchor.
-5. [ ] Switch Exposed and Protected. Confirm the island does not move and nothing is saved or sent
-   to the app. Switch back.
+5. [ ] Move Island size through 50%, 100% and 200%. Confirm size updates immediately, the island
+   stays on the floor at the same location and facing, and tracking does not restart. Switch Exposed
+   and Protected and confirm the selected size stays unchanged. Stop and Start should keep the size
+   selection but require fresh placement. Reload should restore the smaller 100% default.
 6. [ ] Press **Re-place**. Confirm the old anchor disappears, the next tap sets a new one, and the
    page says recalibration may be needed. Do not expect an automatic recenter.
 7. [ ] Background the browser or press **Stop camera**. Confirm the camera indicator stops and the

@@ -313,10 +313,36 @@ button {
 }
 
 .world-actions button:focus-visible,
+.world-size input:focus-visible,
 .world-segmented button:focus-visible,
 .world-attribution a:focus-visible {
   outline: 3px solid var(--world-coral);
   outline-offset: 2px;
+}
+
+.world-size {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.world-size-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.world-size output {
+  color: var(--world-sand);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.world-size input {
+  width: 100%;
+  min-width: 0;
+  height: 2rem;
+  margin: 0;
+  accent-color: var(--world-sand);
 }
 
 .world-state {

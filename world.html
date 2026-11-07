@@ -53,6 +53,14 @@
           <button id="stop" type="button">Stop camera</button>
         </div>
 
+        <div class="world-size">
+          <div class="world-size-label">
+            <label class="world-label" for="island-size">Island size</label>
+            <output id="island-size-value" for="island-size">100%</output>
+          </div>
+          <input id="island-size" type="range" min="50" max="200" step="5" value="100" />
+        </div>
+
         <div class="world-state">
           <span class="world-label" id="state-label">Illustrative local state</span>
           <div class="world-segmented" role="group" aria-labelledby="state-label">
@@ -86,9 +94,9 @@
           <p class="world-note">
             Placement uses 8th Wall's one estimated floor plane (<strong>Y = 0</strong>), not ARKit
             tabletop detection. A table is exploratory only and may confuse tracking. Your card can
-            stay out of view; this page does not use the illustration. The island is sized for a
-            phone held a step or two away — step back if the framing feels tight. These are
-            responsive tracker units, not labelled metres.
+            stay out of view; this page does not use the illustration. Use Island size to adjust
+            the model without placing it again, or step back if the framing feels tight. The
+            percentage is relative to the default size, not a measurement in metres.
           </p>
         </div>
 

@@ -29,8 +29,7 @@ const exposedPieces: BreakWavesPiece[] = []
 
 const ENGINE_TIMEOUT_MS = 30_000
 const START_TIMEOUT_MS = 45_000
-const MODEL_SCALE = 0.48
-const MODEL_BASE_Y = 0.48 * MODEL_SCALE + 0.002
+const DEFAULT_MODEL_SCALE = 0.24
 const INITIAL_CAMERA = { x: 0, y: 1.45, z: 2.2 }
 const TAP_MOVE_LIMIT = 12
 const MAX_PLACEMENT_DISTANCE = 8
@@ -56,6 +55,8 @@ const unsupportedMessage = byId<HTMLElement>('unsupported')
 const trackingWarning = byId<HTMLElement>('tracking-warning')
 const stateCopy = byId<HTMLElement>('state-copy')
 const stateButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-state]'))
+const sizeSlider = byId<HTMLInputElement>('island-size')
+const sizeValue = byId<HTMLOutputElement>('island-size-value')
 
 let THREE: Three = null
 let XR8: Engine = null
@@ -92,6 +93,7 @@ let trackingListener: (() => void) | null = null
 let tapStart: { id: number; x: number; y: number } | null = null
 let tapMoved = false
 
+let modelScale = DEFAULT_MODEL_SCALE
 let activeState: 'exposed' | 'protected' = 'protected'
 let activePieces = protectedPieces
 let protectedTarget = 1
@@ -163,6 +165,32 @@ function setState(state: 'exposed' | 'protected') {
     model.setBreakwaterMood(protectedMix)
     model.setShoreMood(protectedMix, protectedMix)
     model.update(0, protectedMix)
+  }
+}
+
+function modelBaseY() {
+  return 0.48 * modelScale + 0.002
+}
+
+function setIslandSize(percent: number) {
+  modelScale = DEFAULT_MODEL_SCALE * percent / 100
+  sizeValue.value = `${percent}%`
+  sizeSlider.setAttribute('aria-valuetext', `${percent}% of default island size`)
+  if (modelRoot) {
+    modelRoot.scale.setScalar(modelScale)
+    // Lift only enough to keep the bottom on the floor. Do not change the anchor's X/Z or yaw.
+    modelRoot.position.y = modelBaseY()
+  }
+  if (lightRig) {
+    lightRig.scale.setScalar(modelScale)
+    const key = lightRig.getObjectByName('coastal-world-key')
+    const extent = modelScale * 5.2
+    key.shadow.camera.left = -extent
+    key.shadow.camera.right = extent
+    key.shadow.camera.top = extent
+    key.shadow.camera.bottom = -extent
+    key.shadow.camera.updateProjectionMatrix()
+    lightRig.getObjectByName('coastal-world-glow').distance = 3.5 * modelScale
   }
 }
 
@@ -464,8 +492,8 @@ function setupScene(token: number) {
   })
   modelRoot = model.root
   modelRoot.name = 'coastal-world-root'
-  modelRoot.scale.setScalar(MODEL_SCALE)
-  modelRoot.position.set(0, MODEL_BASE_Y, 0)
+  modelRoot.scale.setScalar(modelScale)
+  modelRoot.position.set(0, modelBaseY(), 0)
   modelRoot.rotation.y = 0
   modelRoot.visible = false
   scene.add(modelRoot)
@@ -474,6 +502,7 @@ function setupScene(token: number) {
   model.update(0, protectedMix)
 
   setupLights()
+  setIslandSize(sizeSlider.valueAsNumber)
   raycaster = new THREE.Raycaster()
   placementPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
   sceneToken = token
@@ -488,18 +517,20 @@ function setupScene(token: number) {
 }
 
 function setupLights() {
-  const scale = MODEL_SCALE
+  // Author lights in model units so the rig scales with the island without recreating lights.
+  const scale = 1
   hemisphereLight = new THREE.HemisphereLight(0xd9f2f1, 0x79634c, 1.35)
   scene.add(hemisphereLight)
 
   lightRig = new THREE.Group()
   lightRig.name = 'coastal-world-light-rig'
   const key = new THREE.DirectionalLight(0xffe2b5, 3.6)
+  key.name = 'coastal-world-key'
   key.position.set(-5.2 * scale, 7.6 * scale, 4.8 * scale)
   key.target.position.set(0, 0.2 * scale, 0.2 * scale)
   key.castShadow = true
   key.shadow.mapSize.set(1024, 1024)
-  const shadowExtent = MODEL_SCALE * 5.2
+  const shadowExtent = modelScale * 5.2
   key.shadow.camera.left = -shadowExtent
   key.shadow.camera.right = shadowExtent
   key.shadow.camera.top = shadowExtent
@@ -520,6 +551,7 @@ function setupLights() {
   lightRig.add(rim)
 
   const glow = new THREE.PointLight(0xffbd68, 1.15, 3.5 * scale, 2)
+  glow.name = 'coastal-world-glow'
   glow.position.set(-1.55 * scale, 1.76 * scale, -0.95 * scale)
   lightRig.add(glow)
 
@@ -665,7 +697,7 @@ function tryPlace(clientX: number, clientY: number) {
     return
   }
   const yaw = Math.atan2(sceneCamera.position.x - hit.x, sceneCamera.position.z - hit.z)
-  modelRoot.position.set(hit.x, MODEL_BASE_Y, hit.z)
+  modelRoot.position.set(hit.x, modelBaseY(), hit.z)
   modelRoot.rotation.y = yaw
   if (lightRig) {
     lightRig.position.set(hit.x, 0, hit.z)
@@ -681,7 +713,7 @@ function clearPlacement(announce: boolean) {
   placed = false
   if (modelRoot) {
     modelRoot.visible = false
-    modelRoot.position.set(0, MODEL_BASE_Y, 0)
+    modelRoot.position.set(0, modelBaseY(), 0)
     modelRoot.rotation.y = 0
   }
   if (lightRig) {
@@ -952,12 +984,14 @@ startButton.addEventListener('click', onStartClick)
 stopButton.addEventListener('click', onStopClick)
 replaceButton.addEventListener('click', onReplaceClick)
 reloadButton.addEventListener('click', onReloadClick)
+sizeSlider.addEventListener('input', () => setIslandSize(sizeSlider.valueAsNumber))
 window.addEventListener('pagehide', onPageHide)
 window.addEventListener('pageshow', onPageShow)
 document.addEventListener('visibilitychange', onVisibilityChange)
 for (const button of stateButtons) {
   button.addEventListener('click', () => setState(button.dataset.state as 'exposed' | 'protected'))
 }
+setIslandSize(sizeSlider.valueAsNumber)
 updateStateCopy()
 updateControls()
 setStatus(
