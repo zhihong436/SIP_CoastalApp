@@ -10,15 +10,15 @@ export function TabLayout() {
       </div>
       <nav className="tabs" aria-label="Main">
         <NavLink to="/discover" className="tabs__link">
-          <DiscoverIcon />
+          <DiscoverIcon size={24} />
           Discover
         </NavLink>
         <NavLink to="/chats" className="tabs__link">
-          <ChatsIcon />
+          <ChatsIcon size={24} />
           Chats
         </NavLink>
         <NavLink to="/me" className="tabs__link">
-          <MeIcon />
+          <MeIcon size={24} />
           Me
         </NavLink>
       </nav>

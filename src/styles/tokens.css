@@ -1,18 +1,38 @@
 :root {
-  --color-bg: #f6f1ea;
-  --color-surface: #ffffff;
-  --color-text: #1f2a2e;
+  /* Coastal Editorial palette. */
+  --color-coral: #c53b58;
+  /* Deeper coral for links and small text. 6.0:1 on sand. */
+  --color-coral-strong: #a52b46;
+  --color-coral-pressed: #94233c;
+  --color-ocean: #0b6770;
+  --color-navy: #142a35;
+  --color-sand: #f7f4ed;
+  --color-mist: #dcecef;
+  /* A pale ocean wash for the conversation's secondary trail link. */
+  --color-ocean-wash: #edf5f4;
+  --color-ocean-line: #c9dedd;
+  /* The slate is a decorative accent; --color-slate-deep keeps body text above 4.5:1. */
+  --color-slate: #61737b;
+  --color-slate-deep: #556870;
+
+  --color-bg: var(--color-sand);
+  --color-surface: #fffdf9;
+  --color-text: var(--color-navy);
+  /* Kept neutral so existing trail and chat details do not take on the coastal accent. */
   --color-text-strong: #3b474b;
-  --color-text-muted: #5d6b70;
-  --color-border: #ddd5ca;
-  --color-divider: #efe8de;
-  /* Coral. White on --color-accent is 5.2:1 and the accent on --color-bg is 4.7:1, both above WCAG AA. */
-  --color-accent: #c23a4f;
-  --color-accent-strong: #a82d41;
-  --color-accent-focus: rgb(194 58 79 / 45%);
-  --color-accent-shadow: rgb(194 58 79 / 35%);
-  /* Sea blue for coastal and trail elements only, never ordinary account, Discover or chat screens. */
-  --color-coastal: #0b6e70;
+  --color-text-muted: var(--color-slate-deep);
+  --color-border: #d5d8d1;
+  /* Form edges need 3:1 against the sand and white surfaces. */
+  --color-border-strong: #7c8f91;
+  --color-divider: #e7e2d7;
+  /* Coral primary. White on coral is 5.1:1; coral on sand is 4.6:1. */
+  --color-accent: var(--color-coral);
+  --color-accent-strong: var(--color-coral-strong);
+  --color-accent-pressed: var(--color-coral-pressed);
+  --color-accent-focus: rgb(197 59 88 / 45%);
+  --color-accent-shadow: rgb(197 59 88 / 30%);
+  /* Ocean is the secondary coastal accent, used on the trail and in the shared artwork. */
+  --color-coastal: var(--color-ocean);
   /* The shore drawn over the camera view. It needs to read on bright water, sky and sand, so it is not in the brand colours. */
   --color-camera-outline: rgb(0 0 0 / 60%);
   --color-shore-sea: #2a8fa8;
@@ -24,47 +44,61 @@
   --color-shore-plant: #3f9a4a;
   --color-shore-label: #ffffff;
   /* Soft teal over the sections while a toolbox item is selected, to say they can be tapped. */
-  --color-shore-target: rgb(11 110 112 / 35%);
+  --color-shore-target: rgb(11 103 112 / 35%);
   /* What happened to a section. Safe is teal, Safe with a cost is amber and Lost is red. */
   --color-result-safe: var(--color-coastal);
   --color-result-safe-bg: #e1f2f1;
   --color-result-cost: #7a5200;
   --color-result-cost-bg: var(--color-warning-bg);
   --color-result-lost: var(--color-error);
-  --color-result-lost-bg: #fde8e6;
+  --color-result-lost-bg: #fbe7e5;
   --color-error: #b42318;
   --color-warning-bg: #fff4d6;
   --color-warning-border: #e0b84a;
-  --color-overlay: rgb(31 42 46 / 55%);
-  --color-on-photo: rgb(31 42 46 / 28%);
+  --color-overlay: rgb(20 42 53 / 58%);
+  --color-on-photo: rgb(20 42 53 / 32%);
   --color-on-coastal: rgb(255 255 255 / 16%);
-  --color-send-disabled: #e6ddd2;
+  --color-send-disabled: #e7e2d7;
 
   /* Initials avatars pick one of these by name, so a person always looks the same. */
-  --avatar-gradient-0: linear-gradient(160deg, #e8735a 0%, #c23a4f 100%);
-  --avatar-gradient-1: linear-gradient(160deg, #e39a6f 0%, #b8475f 100%);
-  --avatar-gradient-2: linear-gradient(160deg, #e07a8a 0%, #a83b63 100%);
-  --avatar-gradient-3: linear-gradient(160deg, #eba05e 0%, #c4553b 100%);
+  --avatar-gradient-0: linear-gradient(160deg, #d4645f 0%, #b52f4b 100%);
+  --avatar-gradient-1: linear-gradient(160deg, #c98a62 0%, #a52b46 100%);
+  --avatar-gradient-2: linear-gradient(160deg, #d16b82 0%, #8f2c52 100%);
+  --avatar-gradient-3: linear-gradient(160deg, #c58a55 0%, #c0443c 100%);
 
+  /* A 4/8 rhythm. */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 1rem;
   --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 3rem;
 
   --radius-field: 0.75rem;
+  --radius-input: 0.875rem;
   --radius-trail: 1.125rem;
   --radius-block: 1.375rem;
   --radius-bubble: 1.25rem;
   --radius-bubble-corner: 0.375rem;
   --radius-small: 0.625rem;
   --radius-card: 1.625rem;
+  --radius-art: 1.75rem;
   --radius-pill: 999px;
   --touch-target: 3rem;
-  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --shadow-card: 0 6px 24px rgb(31 42 46 / 12%);
-  --shadow-button: 0 3px 12px rgb(31 42 46 / 10%);
-  --shadow-block: 0 2px 12px rgb(31 42 46 / 8%);
-  --shadow-bubble: 0 1px 4px rgb(31 42 46 / 8%);
-  --shadow-panel: 0 12px 40px rgb(31 42 46 / 25%);
+
+  --font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --text-brand: clamp(2.25rem, 10vw, 2.75rem);
+  --text-title: clamp(1.75rem, 6vw, 2rem);
+  /* Fixed gutters preserve the same normal layout without consuming the viewport at 200% text. */
+  --page-gutter: clamp(20px, 6vw, 24px);
+
+  --shadow-card: 0 6px 24px rgb(20 42 53 / 12%);
+  --shadow-button: 0 3px 12px rgb(20 42 53 / 10%);
+  --shadow-block: 0 2px 12px rgb(20 42 53 / 8%);
+  --shadow-bubble: 0 1px 4px rgb(20 42 53 / 8%);
+  --shadow-panel: 0 12px 40px rgb(20 42 53 / 25%);
+
   --swipe-duration: 260ms;
+  --duration-feedback: 180ms;
+  --ease-feedback: cubic-bezier(0.2, 0.7, 0.3, 1);
 }

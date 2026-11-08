@@ -37,27 +37,33 @@ Values from the project owner. Public sign-up is off; test accounts are created 
 | `src/lib/` | Supabase client, foreground reload hook |
 | `src/styles/` | `tokens.css` (colours and shared values), `global.css` |
 | `supabase/migrations/` | Schema, row level security, database functions |
-| `spike.html`, `src/spike/` | Camera test page. Results in `docs/spike-results.md` |
-| `ar.html`, `card.html`, `src/experiment/` | Standalone coastal AR experiment and print card. Results in `docs/ar-experiment.md` |
-| `src/features/trail/BreakWaves*`, `Hunt*`, `breakWaves*` | Paired hunt stop, marker AR scene, camera lifecycle and challenge model. See `docs/break-the-waves.md` |
-| `public/ar/` | Pinned local MindAR/Three browser modules, artwork and compiled target |
+| `card.html`, `src/experiment/card.ts` | Printable Break the waves QR card helper |
+| `src/features/trail/BreakWaves*`, `Hunt*`, `breakWaves*` | Paired hunt stop, world-tracking AR scene, camera lifecycle and challenge model. See `docs/break-the-waves.md` |
+| `public/ar/` | Pinned local Three.js and 8th Wall browser modules, plus the decorative card illustration |
 
-## Coastal AR experiment
+## Build entries
 
-The coastal AR experiment is a separate, local feasibility page. It uses pinned, locally served
-MindAR 1.2.5 and Three.js 0.160.0 browser modules under `public/ar/vendor/`; no npm dependency was
-added. Open `/card.html` to print the separate QR card and `/ar.html` for the camera experiment.
+Vite builds two HTML entry pages: `index.html` for the React app and `card.html` for the printable
+QR card. The older standalone experiment, diorama and camera-spike pages are retired and are no
+longer built or served.
 
-See `docs/ar-experiment.md` for local/HTTPS iPhone instructions, the compiled target, checks and
-limitations. It is not the paired trail game and does not use Supabase.
+## Print card and QR
+
+Open `/card.html` to print the card. Its QR defaults to `/scan/break-the-waves` on the current host,
+so the printed link follows the deployment base path. The illustration on the card is decorative;
+it is not an AR tracking target. The current hunt places the shared coast on a textured floor with
+world tracking.
+
+See `docs/ar-experiment.md` for the historical image-tracking experiment and its checks, and
+`docs/spike-results.md` for the historical camera-spike results. Those pages and assets are retained
+as evidence only and are not available in the current build.
 
 ## Break the waves hunt
 
-The first paired hunt stop reuses the existing lobby and the pinned local MindAR/Three assets. New
-trail sessions use the `hunt-v1` game version; existing trail rows remain `legacy` and keep the old
-problem-board behaviour. `/scan/break-the-waves` is the canonical hunt card link, while
-`/scan/storm-waves` remains the legacy card. `/card.html` keeps the experiment as the default card
-type and adds an explicit hunt variant.
+The first paired hunt stop reuses the existing lobby and the pinned local 8th Wall/Three.js assets.
+New trail sessions use the `hunt-v1` game version; existing trail rows remain `legacy` and keep the
+old problem-board behaviour. `/scan/break-the-waves` is the canonical hunt card link, while
+`/scan/storm-waves` remains the legacy card. `/card.html` prints only the current hunt card.
 
 See `docs/break-the-waves.md` for the rules, database actions, migration and legacy limitations,
 two-iPhone acceptance checklist and the checks that were actually run. The additive migration is
@@ -88,7 +94,8 @@ only the `ar-scavenger-demo` branch is being previewed, and `main` is not change
 
 ## Hosting
 
-- Cloudflare Pages builds `npm run build` to `dist`.
+- Cloudflare Pages builds `npm run build` to `dist`, with `index.html` and `card.html` as the only
+  HTML entry pages.
 - `main` deploys to the live site. Other branches deploy to `https://<branch>.sip-coastaldatingapp.pages.dev`.
 - `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are set as type Text, not Secret.
 - The camera needs HTTPS. Test camera features on a deployed URL on iPhone.

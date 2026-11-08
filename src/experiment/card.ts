@@ -3,7 +3,6 @@ import encodeQR from 'qr'
 import './card.css'
 
 const form = byId<HTMLFormElement>('card-form')
-const variantSelect = byId<HTMLSelectElement>('card-variant')
 const urlInput = byId<HTMLInputElement>('card-url')
 const resetButton = byId<HTMLButtonElement>('reset-url')
 const printButton = byId<HTMLButtonElement>('print-button')
@@ -14,17 +13,6 @@ const smallQr = byId<HTMLElement>('card-qr-small')
 const previewUrl = byId<HTMLElement>('card-url-text')
 const cardUrl = byId<HTMLElement>('card-qr-url')
 const cardQrNote = byId<HTMLElement>('card-qr-note')
-const cardKicker = byId<HTMLElement>('card-kicker')
-const cardTitle = byId<HTMLElement>('card-title')
-const cardSubtitle = byId<HTMLElement>('card-subtitle')
-const experimentSteps = byId<HTMLElement>('card-steps-experiment')
-const huntSteps = byId<HTMLElement>('card-steps-hunt')
-
-type CardVariant = 'experiment' | 'hunt'
-
-function currentVariant(): CardVariant {
-  return variantSelect.value === 'hunt' ? 'hunt' : 'experiment'
-}
 
 function byId<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id)
@@ -32,23 +20,12 @@ function byId<T extends HTMLElement>(id: string): T {
   return element as T
 }
 
-function defaultUrlFor(variant: CardVariant) {
-  const page = variant === 'hunt' ? 'scan/break-the-waves' : 'ar.html'
-  return new URL(page, window.location.href).href
+function defaultUrl() {
+  // Resolve beside card.html so a deployment under a base path keeps that prefix.
+  return new URL('scan/break-the-waves', window.location.href).href
 }
 
-function updateCardCopy() {
-  const hunt = currentVariant() === 'hunt'
-  cardKicker.textContent = hunt ? 'Coastal protection · paired hunt' : 'Coastal protection · AR experiment'
-  cardTitle.textContent = hunt ? 'Break the waves' : 'Coastal AR'
-  cardSubtitle.textContent = hunt
-    ? 'A two-phone puzzle on one printed coast. Both players build; both see the accepted changes.'
-    : 'A miniature sea, beach and breakwater that sits on this card.'
-  experimentSteps.hidden = hunt
-  huntSteps.hidden = !hunt
-}
-
-function parseExperimentUrl(value: string): string | null {
+function parseCardUrl(value: string): string | null {
   const trimmed = value.trim()
   if (!trimmed) return null
   try {
@@ -60,22 +37,28 @@ function parseExperimentUrl(value: string): string | null {
   }
 }
 
-function warningFor(url: URL) {
-  const host = url.hostname.toLowerCase()
-  const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1'
-  const isPrivate =
+function isLocalHost(host: string) {
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1'
+}
+
+function isPrivateHost(host: string) {
+  return (
     /^10\./.test(host) ||
     /^192\.168\./.test(host) ||
     /^172\.(1[6-9]|2\d|3[0-1])\./.test(host) ||
     /^169\.254\./.test(host)
+  )
+}
 
-  if (isLocalhost) {
+function warningFor(url: URL) {
+  const host = url.hostname.toLowerCase()
+  if (isLocalHost(host)) {
     return 'This QR points to localhost, which a phone cannot open. Enter the HTTPS preview URL or the trusted local HTTPS address before printing a phone card.'
   }
   if (url.protocol === 'http:') {
     return 'Safari will not allow camera access over plain HTTP. Use an HTTPS URL for a phone test.'
   }
-  if (isPrivate) {
+  if (isPrivateHost(host)) {
     return 'This is a private network URL. It will only work if the phone is on the same network and trusts the HTTPS certificate. Check it on the phone before printing.'
   }
   return ''
@@ -89,18 +72,23 @@ function renderQr(url: string) {
   cardUrl.textContent = url
 }
 
+function clearQr() {
+  preview.innerHTML = ''
+  smallQr.innerHTML = ''
+  previewUrl.textContent = 'Not set'
+  cardUrl.textContent = ''
+  cardQrNote.hidden = true
+  cardQrNote.textContent = ''
+}
+
 function updateFromInput(rewriteInput = true) {
-  const raw = urlInput.value
-  const normalized = parseExperimentUrl(raw)
+  const normalized = parseCardUrl(urlInput.value)
   error.hidden = true
   if (!normalized) {
     printButton.disabled = true
     warning.hidden = false
-    warning.textContent = 'Enter a full http:// or https:// URL. A relative address cannot be printed into a phone card.'
-    preview.innerHTML = ''
-    smallQr.innerHTML = ''
-    previewUrl.textContent = 'Not set'
-    cardUrl.textContent = ''
+    warning.textContent = 'Enter a full http:// or https:// URL. Empty, relative or other-scheme addresses cannot be printed into a phone card.'
+    clearQr()
     return
   }
 
@@ -110,8 +98,10 @@ function updateFromInput(rewriteInput = true) {
     renderQr(normalized)
   } catch {
     printButton.disabled = true
+    warning.hidden = true
     error.hidden = false
-    error.textContent = 'That URL is too long for the QR encoder. Use a shorter experiment address.'
+    error.textContent = 'That URL is too long for the QR encoder. Use a shorter Break the waves address.'
+    clearQr()
     return
   }
 
@@ -123,8 +113,7 @@ function updateFromInput(rewriteInput = true) {
 
   // If a local/dead URL is printed anyway, the card itself carries the warning next to the QR.
   const host = parsed.hostname.toLowerCase()
-  const local = host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1'
-  if (local) {
+  if (isLocalHost(host)) {
     cardQrNote.hidden = false
     cardQrNote.textContent = 'LOCALHOST — A PHONE CANNOT OPEN THIS. REPLACE THE QR BEFORE PRINTING.'
   } else if (parsed.protocol === 'http:') {
@@ -144,14 +133,8 @@ form.addEventListener('submit', (event) => {
 urlInput.addEventListener('input', () => updateFromInput(false))
 urlInput.addEventListener('change', () => updateFromInput())
 
-variantSelect.addEventListener('change', () => {
-  updateCardCopy()
-  urlInput.value = defaultUrlFor(currentVariant())
-  updateFromInput()
-})
-
 resetButton.addEventListener('click', () => {
-  urlInput.value = defaultUrlFor(currentVariant())
+  urlInput.value = defaultUrl()
   updateFromInput()
 })
 
@@ -161,8 +144,6 @@ printButton.addEventListener('click', () => {
   if (!printButton.disabled) window.print()
 })
 
-// Start on the standalone experiment, preserving its old default. Switching to the hunt card
-// proposes the canonical /scan/break-the-waves URL for this host.
-updateCardCopy()
-urlInput.value = defaultUrlFor(currentVariant())
+// The printed card always targets the canonical current-hunt link for this host.
+urlInput.value = defaultUrl()
 updateFromInput()
