@@ -12,7 +12,10 @@ export interface Profile {
 // The app has no photo source yet. A genuine URL can be passed in presentation-only;
 // the quiet initials panel stays as the fallback when it is absent or fails.
 export function ProfileCard({ profile, photoUrl }: { profile: Profile; photoUrl?: string }) {
-  const { initials } = avatarOf(profile.name)
+  // A missing name still needs a readable identity and meaningful image alt text.
+  const validName = profile.name.trim()
+  const displayName = validName || 'Anonymous'
+  const { initials } = avatarOf(validName)
   const photo = photoUrl?.trim() || null
   const [photoFailed, setPhotoFailed] = useState(false)
   const lastPhoto = useRef(photo)
@@ -64,17 +67,22 @@ export function ProfileCard({ profile, photoUrl }: { profile: Profile; photoUrl?
               key={shownPhoto}
               className="card__photo"
               src={shownPhoto}
-              alt={`Photo of ${profile.name}`}
+              alt={`Photo of ${displayName}`}
               draggable={false}
               onError={() => setPhotoFailed(true)}
             />
           ) : (
-            <CoastalPortraitArt initials={initials} />
+            <>
+              <CoastalPortraitArt />
+              <span className="card__portrait-initials" aria-hidden="true">
+                {initials || '?'}
+              </span>
+            </>
           )}
         </div>
         <div className="card__identity">
           <h2 className="card__name">
-            {profile.name}
+            {displayName}
             <span className="card__age">, {profile.age}</span>
           </h2>
           <p className="card__meta">
@@ -91,7 +99,7 @@ export function ProfileCard({ profile, photoUrl }: { profile: Profile; photoUrl?
               className="card__bio-scroll"
               tabIndex={bioScrollable ? 0 : undefined}
               role={bioScrollable ? 'region' : undefined}
-              aria-label={bioScrollable ? `About ${profile.name}` : undefined}
+              aria-label={bioScrollable ? `About ${displayName}` : undefined}
             >
               <p className="card__bio">{profile.bio}</p>
             </div>

@@ -147,12 +147,14 @@ export function LighthouseArt() {
   )
 }
 
-// A quiet missing-photo panel for the Discover card: a soft coastal wash, one
-// faint wave line and plain initials. It stays deliberately plainer than a photo.
+// A quiet missing-photo backdrop for the Discover card: a warm coastal wash,
+// one sand shelf and a pair of faint horizons. The initials circle is rendered
+// in HTML by ProfileCard so it stays round and legible at every hero height.
 // Gradient ids are unique per mounted card; two stacked cards must not share defs.
-export function CoastalPortraitArt({ initials }: { initials: string }) {
+export function CoastalPortraitArt() {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const wash = `portrait-wash-${uid}`
+  const sand = `portrait-sand-${uid}`
 
   return (
     <svg
@@ -163,38 +165,45 @@ export function CoastalPortraitArt({ initials }: { initials: string }) {
       focusable="false"
     >
       <defs>
-        <linearGradient id={wash} x1="0" y1="0" x2="0.25" y2="1">
-          <stop offset="0" stopColor="#eef4f2" />
-          <stop offset="0.55" stopColor="#f4f0e7" />
-          <stop offset="1" stopColor="#e9e3d6" />
+        <linearGradient id={wash} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fcf8f0" />
+          <stop offset="0.55" stopColor="#f8f1e4" />
+          <stop offset="1" stopColor="#f4ead8" />
+        </linearGradient>
+        <linearGradient id={sand} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f7eedf" stopOpacity="0.7" />
+          <stop offset="1" stopColor="#f1e4d0" stopOpacity="0.55" />
         </linearGradient>
       </defs>
 
       <rect width="640" height="480" fill={`url(#${wash})`} />
 
-      {/* One faint contour carries the coast without becoming a competing scene. */}
+      {/* The lower sand shelf keeps the hero warm without becoming a scene. */}
       <path
-        d="M-24 312c82-21 142-26 216-16 75 10 121 18 192 10 86-9 145-31 280-14v96c-128-13-198 7-282 14-72 6-117-6-190-14-83-9-142-2-216 20z"
-        fill="none"
-        stroke="var(--color-ocean-line)"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        opacity="0.72"
+        d="M0 352c94-12 170-10 256-2 91 8 163 10 246 2 52-5 95-8 138-6v134H0z"
+        fill={`url(#${sand})`}
+      />
+      <path
+        d="M0 410c104-10 178-8 266-1 88 7 158 8 240 1 51-4 91-5 134-3v73H0z"
+        fill="#ead8bb"
+        opacity="0.28"
       />
 
-      <text
-        x="320"
-        y="240"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fill="var(--color-navy)"
-        fontFamily="var(--font-body)"
-        fontSize="56"
-        fontWeight="650"
-        letterSpacing="4"
-      >
-        {initials}
-      </text>
+      {/* Two thin, muted horizons pass behind the initials circle. */}
+      <path
+        d="M-24 294c88-17 151-20 226-12 78 8 134 13 205 7 86-7 153-20 257-18"
+        fill="none"
+        stroke="rgb(11 103 112 / 52%)"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M-24 337c95-10 159-12 236-6 81 6 139 10 212 4 84-7 148-15 240-13"
+        fill="none"
+        stroke="rgb(11 103 112 / 30%)"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }

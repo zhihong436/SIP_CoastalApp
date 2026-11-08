@@ -744,7 +744,36 @@ a {
 }
 
 .card--fallback .card__hero-art {
-  min-height: 4rem;
+  display: grid;
+  place-items: center;
+  /* Keep the portrait substantial even when a long identity shares a short screen. */
+  min-height: 7rem;
+  /* The circle can shrink with the hero's height, so a large-text identity never
+     pushes it out of the artwork. The background SVG still fills the panel. */
+  container-type: size;
+}
+
+/* Warm, quiet initials portrait. The circle is HTML rather than part of the SVG,
+   so it stays perfectly round and its initials stay legible at any hero height. */
+.card--fallback .card__portrait-initials {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(38%, 9.25rem, 82cqh);
+  aspect-ratio: 1;
+  padding: 0 0.12em;
+  border: 1.5px solid rgb(11 103 112 / 58%);
+  border-radius: 50%;
+  background: #fffaf1;
+  color: var(--color-navy);
+  font-size: min(17.8cqw, 38cqh, 4.25rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .card--photo .card__hero {
