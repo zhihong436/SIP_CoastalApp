@@ -6,24 +6,19 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a3c4b'/%3E%3Cpath d='M16 5l9 11-9 11-9-11z' fill='%23ffd75a'/%3E%3C/svg%3E" />
     <meta name="theme-color" content="#f6efd9" />
     <meta name="robots" content="noindex" />
-    <title>Print the coastal AR card</title>
+    <title>Print the Break the waves QR card</title>
   </head>
   <body>
     <main class="card-page">
       <section class="card-controls" aria-labelledby="controls-title">
-        <p class="kicker">SIP coastal activity · local experiment</p>
-        <h1 id="controls-title">Print the coastal AR card</h1>
+        <p class="kicker">SIP coastal activity · paired hunt</p>
+        <h1 id="controls-title">Print the Break the waves QR card</h1>
         <p class="lede">
-          The QR code opens the experiment or the paired Break the waves stop. The illustration above it is the
-          tracking image, so changing the QR link does not change the artwork that the camera follows.
+          The QR code opens the current Break the waves stop on this host. The coast is placed on a textured floor
+          with world tracking; the illustration on the card is decorative.
         </p>
 
         <form id="card-form" class="url-form" novalidate>
-          <label for="card-variant">Card type</label>
-          <select id="card-variant" name="card-variant">
-            <option value="experiment">Coastal AR experiment (default)</option>
-            <option value="hunt">Break the waves hunt · stop 1</option>
-          </select>
           <label for="card-url">URL to put in the QR code</label>
           <input
             id="card-url"
@@ -35,7 +30,7 @@
             required
           />
           <div class="url-form__actions">
-            <button id="reset-url" class="button button--quiet" type="button">Use this card type's URL</button>
+            <button id="reset-url" class="button button--quiet" type="button">Use the default URL</button>
             <button class="button button--primary" type="submit">Update QR</button>
           </div>
         </form>
@@ -44,7 +39,7 @@
         <p id="url-error" class="error" role="alert" hidden></p>
 
         <div class="preview">
-          <div id="qr-code" class="qr-code" aria-label="QR code for the experiment URL"></div>
+          <div id="qr-code" class="qr-code" aria-label="QR code for the Break the waves URL"></div>
           <div class="preview__copy">
             <p class="preview__label">The printed QR opens:</p>
             <p id="card-url-text" class="preview__url"></p>
@@ -58,37 +53,42 @@
           <summary>Phone test instructions</summary>
           <ol>
             <li>
+              Both players mark ready in the lobby first. Each phone then needs its own scan or testing entry; one
+              player's scan does not open the stop on the other phone.
+            </li>
+            <li>
               A phone cannot open a QR that points to <code>localhost</code>. Print a card only after the URL field
               contains an address the phone can reach.
             </li>
             <li>
               The simplest remote test is an HTTPS preview URL on an approved host. Open it on the phone once, scan the
-              printed QR, allow the camera, and point the rear camera at the illustration.
+              printed QR, allow camera and motion access, then tap a textured floor patch to place the coast.
             </li>
             <li>
               A trusted local HTTPS setup also works if the phone can reach that host on the same network. Plain HTTP
               camera access is blocked by Safari except on localhost, which is not the phone.
             </li>
             <li>
-              Use A5 paper at 100%, or A4 with "fit to page". The illustration should be roughly 110–125 mm square and
-              printed in colour. Matte paper reduces glare.
+              The illustration is decorative, not a tracking target. Use a floor with cracks, gravel, grass or a
+              patterned rug, and keep tables and other horizontal surfaces out of view. Use A5 paper at 100%, or A4
+              with "fit to page"; print in colour and use matte paper to reduce glare.
             </li>
             <li>
-              Build and desktop checks do not prove Safari camera or tracking behaviour. Record the real-iPhone result
-              separately.
+              Build and desktop checks do not prove Safari camera or world-tracking behaviour. Record the real-iPhone
+              result separately.
             </li>
           </ol>
         </details>
-
-        <p class="back-link"><a href="ar.html">Open the experiment page</a></p>
       </section>
 
-      <section class="card-sheet" aria-label="Printable A5 coastal AR card">
+      <section class="card-sheet" aria-label="Printable A5 Break the waves QR card">
         <div class="card-sheet__inner">
           <header class="card-head">
-            <p id="card-kicker" class="card-kicker">Coastal protection · AR experiment</p>
-            <h1 id="card-title">Coastal AR</h1>
-            <p id="card-subtitle" class="card-subtitle">A miniature sea, beach and breakwater that sits on this card.</p>
+            <p class="card-kicker">Coastal protection · paired hunt</p>
+            <h1>Break the waves</h1>
+            <p class="card-subtitle">
+              Two phones, one shared coast. Place it on a textured floor, then build your own breakwater pieces.
+            </p>
           </header>
 
           <div class="art-frame">
@@ -100,43 +100,25 @@
 
           <div class="card-bottom">
             <div class="card-instructions">
-              <div id="card-steps-experiment">
-                <p class="card-step"><strong>1.</strong> Scan the QR code to open the experiment.</p>
-                <p class="card-step"><strong>2.</strong> Allow the rear camera.</p>
-                <p class="card-step">
-                  <strong>3.</strong> Point the camera at the illustration, not the QR code. Hold the card flat and fill
-                  the frame.
-                </p>
-                <p class="card-step">
-                  <strong>4.</strong> Tap a glowing ring to place a breakwater section broadside to the waves. Use
-                  <strong>Rotate 90°</strong> to turn it edge-on and compare the water behind it.
-                </p>
-                <p class="card-disclaimer">
-                  Illustrative only: broadside sections add a local wave shadow behind them; rotating 90° removes it.
-                  Breakwaters reduce wave energy; they do not prevent higher sea levels from flooding land.
-                </p>
-              </div>
-              <div id="card-steps-hunt" hidden>
-                <p class="card-step"><strong>1.</strong> Both players start the trail together and mark ready in the lobby.</p>
-                <p class="card-step"><strong>2.</strong> Scan this QR with the phone camera or the in-app scanner.</p>
-                <p class="card-step">
-                  <strong>3.</strong> Tap <strong>Start AR camera</strong>, then point the rear camera at the
-                  illustration, not the QR code.
-                </p>
-                <p class="card-step">
-                  <strong>4.</strong> Each player selects their own two pieces, taps the water and uses Rotate or Return.
-                  Both phones show the accepted shared build.
-                </p>
-                <p class="card-disclaimer">
-                  Stop 1 of the hunt. The next clue, Higher ground, is not built yet. The shelter model is illustrative:
-                  breakwaters reduce wave energy, but they do not stop flooding from higher sea levels.
-                </p>
-              </div>
+              <p class="card-step"><strong>1.</strong> Both players start the trail together and mark ready in the lobby.</p>
+              <p class="card-step"><strong>2.</strong> Each player scans this QR with the phone camera or the in-app scanner.</p>
+              <p class="card-step">
+                <strong>3.</strong> Tap <strong>Start camera</strong>, then tap a textured floor patch once to place the
+                coast. The illustration is decorative, not a tracking target.
+              </p>
+              <p class="card-step">
+                <strong>4.</strong> Each player places and rotates their own two breakwater pieces on the water. Both
+                phones show the shared accepted build.
+              </p>
+              <p class="card-disclaimer">
+                Stop 1 of the hunt. The next clue, Higher ground, is not built yet. The shelter model is illustrative:
+                breakwaters reduce wave energy, but they do not stop flooding from higher sea levels.
+              </p>
             </div>
 
             <div class="card-qr">
               <div id="card-qr-small" class="card-qr__code" aria-hidden="true"></div>
-              <p class="card-qr__caption">Scan to open the experiment</p>
+              <p class="card-qr__caption">Scan to open Break the waves</p>
               <p id="card-qr-url" class="card-qr__url"></p>
               <p id="card-qr-note" class="card-qr__note" hidden></p>
             </div>
@@ -144,7 +126,7 @@
 
           <footer class="card-foot">
             <span>USI2001 Social Innovation Project · local demo</span>
-            <span>Illustration and target compiled locally</span>
+            <span>Illustration is decorative · not an AR target</span>
           </footer>
         </div>
       </section>

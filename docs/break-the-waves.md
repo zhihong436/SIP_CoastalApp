@@ -1,5 +1,14 @@
 # Break the waves
 
+> **Current state.** The standalone `/ar.html`, `/diorama.html`, `/world.html` and `/spike.html`
+> pages, the old MindAR marker controller (`breakWavesAr.ts`) and their compiler/marker assets are
+> retired and removed from the current build. `/card.html` remains and prints only the current hunt
+> QR, which defaults to `/scan/break-the-waves`. The live hunt uses world tracking of a textured
+> floor and does not recognise the card illustration. `src/diorama/dioramaModel.ts` remains the
+> shared model used by the live scene. Sections and result rows below that describe the retired
+> standalone experiments are retained as historical evidence; they are not current instructions or
+> current runtime claims.
+
 Break the waves is stop 1 of the paired hunt. It is separate from the earlier standalone AR
 experiment and from the legacy problem-board trail. Two matched players mark ready in the existing
 lobby, scan the same printed card, place the shared coast on a textured floor with world tracking on
@@ -16,10 +25,11 @@ simulated or unlocked.
 | `/trail/:sessionId` | Routes `game_version = 'hunt-v1'` to the new stop; legacy rows stay on the old board/stop screens. |
 | `/scan/break-the-waves` | Canonical hunt card link. It only opens stop 1 in the caller's active new-hunt trail. |
 | `/scan/storm-waves` | Legacy stop 1 card. Its old behaviour is unchanged. |
-| `/card.html` | Print helper. The card type selector keeps the standalone experiment as the default and adds a Break the waves hunt variant. |
-| `/ar.html` | Standalone experiment, unchanged and still usable. |
-| `/diorama.html` | Standalone diorama preview. It is presentation-only and is not the paired stop or a debug route into it. |
-| `/world.html` | Isolated world-tracking feasibility experiment. It shows the approved lighthouse island, places it by explicit tap on 8th Wall's estimated floor, and keeps local exposed/protected examples. It is not the paired stop and has no account, save, sync or progression. |
+| `/card.html` | Print helper. Prints only the current hunt QR, defaulting to `/scan/break-the-waves`. |
+
+The former `/ar.html`, `/diorama.html`, `/world.html` and `/spike.html` standalone pages are
+retired and no longer built or served. Their historical results remain below and in
+`docs/ar-experiment.md` and `docs/spike-results.md`.
 
 Unknown or future QR names do not call a hunt mutation. The hunt scanner accepts only the exact
 `/scan/break-the-waves` path. The legacy scan and in-app scanner do not accept the hunt card. The
@@ -96,12 +106,12 @@ The additive migration is
 
 ## AR and UI
 
-The paired stop now uses the local vendored 8th Wall 1.0.0 engine and Three.js 0.160 module through
-`src/features/trail/breakWavesWorldAr.ts`. It does not use MindAR or `coastal-target.mind`. The
-earlier standalone experiment (`/ar.html`), diorama and card helper still use the pinned local
-MindAR 1.2.5 and Three.js 0.160.0 files under `public/ar/vendor/`, plus the compiled
-`public/ar/targets/coastal-target.mind`; those assets and the import map are unchanged. No CDN or
-additional engine is used by the paired page.
+The paired stop uses the local vendored 8th Wall 1.0.0 engine and Three.js 0.160 module through
+`src/features/trail/breakWavesWorldAr.ts`. It does not use MindAR or a compiled image target. The
+card illustration is decorative; tracking uses a textured floor. The retired standalone experiment,
+diorama preview and old marker controller are described as history below; their files, the MindAR
+vendor and the compiled target are not part of the current build. No CDN or additional engine is
+used by the paired page.
 
 - Entry is gated per page. A direct trail visit, reload or previous shared `opened_at` does not
   authorise this phone; it must scan the card or use the separate testing entry. The external card
@@ -125,8 +135,8 @@ additional engine is used by the paired page.
   `1 / PUZZLE_SCALE` (1/2.7) so puzzle coordinates stay the scene's local coordinates; the caller's
   floor anchor then owns translation, yaw, physical scale and floor lift. Puzzle coordinates,
   pointer-to-local conversion and saved layouts are unchanged.
-- `createBreakWavesScene` keeps `registration: 'marker'` for the standalone marker experiment and
-  uses the opt-in `registration: 'floor'` mode for the paired page. Floor registration leaves the
+- `createBreakWavesScene` retains the historical `registration: 'marker'` mode in the shared scene
+  code and uses the opt-in `registration: 'floor'` mode for the paired page. Floor registration leaves the
   logical scene root at unit scale with zero rotation. A parent scale of `0.24 × PUZZLE_SCALE`
   therefore produces the accepted 0.24 model scale through the same single inverse
   `PUZZLE_SCALE` model transform. `setView` remains a marker presentation tilt and cannot pitch a
@@ -221,8 +231,9 @@ The paired page no longer mounts MindAR, so this is no longer the live hunt path
 a record of the previous marker controller experiment: the paired hunt temporarily set MindAR's
 `filterBeta` to `10` instead of the pinned default `1000`, while the minimum cutoff (`0.001`) and
 warmup/miss tolerances remained unchanged. It tuned the pose filter only and did not freeze the
-miniature, change the camera or keep construction enabled after tracking loss. The standalone
-experiment remains unchanged and does not use this paired-page setting.
+miniature, change the camera or keep construction enabled after tracking loss. The standalone marker
+experiment has also been retired; its page, controller and marker assets are not part of the current
+build.
 
 This was never a proven jitter fix. Do not infer current world-tracking quality from that filter
 output. Marker jitter/lag and close-view clipping were separate historical issues and are not part
@@ -230,13 +241,14 @@ of the paired world-tracking acceptance.
 
 ## World-tracking feasibility experiment
 
-`/world.html` is a separate feasibility experiment, not a migration of the paired game. The paired
-stop now uses the related `BreakWavesWorldAr` controller, but `/world.html` remains isolated. It is
-not linked from the hunt card, does not use MindAR or `coastal-target.mind`, and does not call the
-app, Supabase or the backend. The approved lighthouse-island model comes from
-`createLighthouseDiorama` in `src/diorama/dioramaModel.ts`; the page owns only the AR lifecycle,
-floor placement, status UI and local example state. There is no account, save, sync, page-level
-analytics call, real puzzle progression or authoritative layout write.
+`/world.html` was a separate feasibility experiment, not a migration of the paired game. The
+standalone page has been retired and removed; this section remains as a record of the harness behind
+the paired stop's related `BreakWavesWorldAr` controller. It was not linked from the hunt card, did
+not use MindAR or a compiled image target, and did not call the app, Supabase or the backend. The
+approved lighthouse-island model comes from `createLighthouseDiorama` in
+`src/diorama/dioramaModel.ts`; the page owned only the AR lifecycle, floor placement, status UI and
+local example state. There was no account, save, sync, page-level analytics call, real puzzle
+progression or authoritative layout write.
 
 Placement uses 8th Wall's single dynamically estimated floor plane (`Y = 0`). It is **not** ARKit
 or ARCore tabletop surface detection. 8th Wall's world-tracking troubleshooting page says the
@@ -305,18 +317,21 @@ Lifecycle and UX:
   the local unmodified `LICENSE` and says it is provided AS IS, without warranties and without
   endorsement. This is not a legal-compliance conclusion.
 
-### Two-iPhone acceptance checklist
+### Historical standalone world-tracking acceptance checklist
 
-Record the actual devices before testing. Fill in the table on each phone. This checklist has not
-been run yet; the desktop fallback and synthetic lifecycle checks below are not phone evidence.
+This checklist refers to the retired `/world.html` page and is retained as history, not current
+instructions. Record the actual devices before testing. Fill in the table on each phone. This
+checklist has not been run yet; the desktop fallback and synthetic lifecycle checks below are not
+phone evidence.
 
 | Phone | Model | iOS version | Safari version |
 | --- | --- | --- | --- |
 | A |  |  |  |
 | B |  |  |  |
 
-Open `/world.html` directly on the branch preview host or from an OS QR launcher URL. Do not use
-the hunt card. Use the same branch build on both phones. This pass did not commit, push or deploy,
+Historically, this checklist opened `/world.html` directly on the branch preview host or from an OS
+QR launcher URL, without the hunt card. Use the same branch build on both phones if reproducing
+the historical result. This pass did not commit, push or deploy,
 so publish the branch through the normal owner process before phone testing; the expected
 branch-preview path is `/world.html` on the existing preview host.
 
@@ -539,8 +554,9 @@ npm run build
 npm run preview -- --port 4173
 ```
 
-Open `http://localhost:4173/card.html`, choose **Break the waves hunt · stop 1**, check the proposed
-`/scan/break-the-waves` URL, and print. The standalone experiment stays the default card type.
+Open `http://localhost:4173/card.html`, check the default `/scan/break-the-waves` URL (or enter a
+reachable host URL), and print. The card page has no experiment/hunt selector; the hunt card is the
+only card type.
 
 ## Manual two-iPhone acceptance checklist
 

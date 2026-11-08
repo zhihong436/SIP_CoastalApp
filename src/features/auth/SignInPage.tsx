@@ -74,9 +74,6 @@ export function SignInPage() {
             </p>
           )}
         </form>
-        <p className="signin__footer">
-          <a href="/spike.html">Camera spike</a>
-        </p>
       </div>
     </main>
   )

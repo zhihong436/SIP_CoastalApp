@@ -179,24 +179,6 @@ body {
   margin-top: 0.125rem;
 }
 
-.signin__footer {
-  margin: auto 0 0;
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-divider);
-  font-size: 0.875rem;
-}
-
-.signin__footer a {
-  color: var(--color-text-muted);
-  font-weight: 600;
-  text-decoration-color: var(--color-border-strong);
-  text-underline-offset: 0.2em;
-}
-
-.signin__footer a:hover {
-  color: var(--color-accent-strong);
-}
-
 @media (max-height: 640px) {
   .signin__art {
     max-height: 6.5rem;
@@ -213,10 +195,6 @@ body {
   .signin__form {
     gap: var(--space-2);
     margin-top: var(--space-4);
-  }
-
-  .signin__footer {
-    padding-top: var(--space-3);
   }
 }
 

@@ -1,5 +1,12 @@
 # Coastal AR feasibility experiment
 
+> **Retired in the current build.** The standalone `ar.html` experiment, its local target compiler
+> and the compiled MindAR target were removed. They are no longer built or served. This page is
+> retained as historical evidence of the feasibility work: the routes, commands and checks below
+> record what was run at the time and are not current setup or test instructions. The current paired
+> hunt uses world tracking, and `/card.html` prints the current hunt QR; the card illustration is
+> not a tracking target. See `docs/break-the-waves.md`.
+
 A standalone, local image-tracking experiment for the coastal protection activity. A printed card
 shows an illustrated coast and a separate QR code. The QR opens `ar.html`; the rear camera tracks
 the illustration and places an animated miniature sea, beach and breakwater on it. A tap places a

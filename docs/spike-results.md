@@ -1,5 +1,11 @@
 # Camera spike results
 
+> **Retired in the current build.** `/spike.html` and `src/spike/` were removed and are no longer
+> built or served. This page is retained as historical evidence: the recorded pass results below are
+> the camera-spike results, not current setup or test instructions. The live app's camera code is in
+> `src/features/camera/`, and the paired hunt uses world tracking. See `README.md` and
+> `docs/break-the-waves.md`.
+
 Open `/spike.html` on the preview deploy on each test iPhone. Fill in one row per check per phone. The page also keeps an event log under the buttons, which helps with the notes.
 
 | Check | Phone model | iOS version | Result | Notes |
