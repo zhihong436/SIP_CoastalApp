@@ -703,18 +703,19 @@ a {
   scrollbar-width: thin;
 }
 
-/* The scene fills whatever height the identity base leaves. */
+/* The person-led hero. A photo fills it; the quiet fallback keeps identity on light. */
 .card__hero {
   position: relative;
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  min-height: 7rem;
-  overflow: hidden;
-  background: var(--color-mist);
+  min-height: 9rem;
+  /* The art clips itself. Keeping the hero unclipped lets a large-text identity
+     grow the hero rather than disappearing behind the About panel. */
+  overflow: visible;
+  background: var(--color-surface);
 }
 
-/* The scene keeps its own box, so it stays centred above however tall the name grows. */
 .card__hero-art {
   position: relative;
   flex: 1 1 0;
@@ -736,12 +737,27 @@ a {
   object-position: center;
 }
 
-/* A quiet tonal foot helps the art settle into the navy identity base. */
-.card__hero-art::after {
+/* Both branches let the hero grow with its identity, so enlarged text never spills
+   into About or squeezes the fallback initials out of the card. */
+.card--fallback .card__hero {
+  min-height: auto;
+}
+
+.card--fallback .card__hero-art {
+  min-height: 4rem;
+}
+
+.card--photo .card__hero {
+  flex-basis: 12rem;
+  min-height: auto;
+  background: var(--color-navy);
+}
+
+.card--photo .card__hero::after {
   position: absolute;
   inset: auto 0 0;
-  height: 22%;
-  background: linear-gradient(to top, rgb(20 42 53 / 32%), transparent);
+  height: 55%;
+  background: linear-gradient(to top, rgb(20 42 53 / 28%), rgb(20 42 53 / 0%));
   content: '';
   pointer-events: none;
 }
@@ -750,17 +766,43 @@ a {
   position: relative;
   z-index: 1;
   flex: none;
-  margin-top: -1.25rem;
-  padding: 0.9rem 1.2rem 0.95rem;
-  border-radius: var(--radius-block) var(--radius-block) 0 0;
-  background: var(--color-navy);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%);
+  padding: 1rem 1.25rem 1.1rem;
+  background: var(--color-surface);
+  box-shadow: inset 0 1px 0 var(--color-divider);
+}
+
+/* The photo sits behind the flow, so a long name can grow the hero without being clipped.
+   Auto margin keeps the name and age at the photo's foot rather than in a separate block. */
+.card--photo .card__hero-art {
+  position: absolute;
+  inset: 0;
+}
+
+.card--photo .card__identity {
+  margin-top: auto;
+  padding: 1.15rem 1.25rem 1.25rem;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The scrim starts above the identity and fades out, so the photo and text share
+   one soft transition. White text remains readable even when a long name makes
+   the identity tall at enlarged text. */
+.card--photo .card__identity::before {
+  position: absolute;
+  inset: -4em 0 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgb(20 42 53 / 86%), rgb(20 42 53 / 65%));
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 4em);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 4em);
+  content: '';
+  pointer-events: none;
 }
 
 .card__name {
   margin: 0;
-  color: #fff;
-  font-size: clamp(1.625rem, 8vw, 2.125rem);
+  color: var(--color-navy);
+  font-size: clamp(1.75rem, 7.5vw, 2.25rem);
   font-weight: 800;
   letter-spacing: -0.025em;
   line-height: 1.14;
@@ -768,24 +810,50 @@ a {
   text-wrap: pretty;
 }
 
+.card--photo .card__name {
+  color: #fff;
+  text-shadow: 0 1px 14px rgb(10 24 31 / 35%);
+}
+
 .card__age {
-  color: #f3ddc5;
+  color: var(--color-slate-deep);
   font-weight: 700;
   white-space: nowrap;
 }
 
+.card--photo .card__age {
+  color: #f3ddc5;
+}
+
+.card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.45rem 0 0;
+}
+
 .card__gender {
-  display: inline-block;
-  margin-left: 0.45rem;
-  padding: 0.15rem 0.55rem;
-  border: 1px solid rgb(255 255 255 / 30%);
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.65rem;
+  padding: 0.12rem 0.6rem;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
-  color: #fff;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  background: var(--color-ocean-wash);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   line-height: 1.25;
   overflow-wrap: anywhere;
-  vertical-align: 0.12em;
+  text-transform: uppercase;
+}
+
+.card--photo .card__gender {
+  border-color: rgb(255 255 255 / 46%);
+  background: rgb(20 42 53 / 36%);
+  color: #fff;
 }
 
 /* About hugs its copy, and only takes a larger share when a long bio needs the room. */
@@ -794,7 +862,8 @@ a {
   flex: 0 1 auto;
   flex-direction: column;
   gap: 0.4rem;
-  min-height: 0;
+  /* A usable bio viewport even when enlarged identity text grows the hero. */
+  min-height: 7rem;
   max-height: 36%;
   padding: 0.95rem 1.35rem 1.1rem;
   background: var(--color-surface);

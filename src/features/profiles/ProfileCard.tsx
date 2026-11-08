@@ -10,7 +10,7 @@ export interface Profile {
 }
 
 // The app has no photo source yet. A genuine URL can be passed in presentation-only;
-// the coastal scene and initials stay as the fallback when it is absent or fails.
+// the quiet initials panel stays as the fallback when it is absent or fails.
 export function ProfileCard({ profile, photoUrl }: { profile: Profile; photoUrl?: string }) {
   const { initials } = avatarOf(profile.name)
   const photo = photoUrl?.trim() || null
@@ -53,15 +53,17 @@ export function ProfileCard({ profile, photoUrl }: { profile: Profile; photoUrl?
     }
   }, [hasBio, profile.bio])
 
+  const shownPhoto = photo && !photoFailed ? photo : null
+
   return (
-    <article className="card">
+    <article className={`card ${shownPhoto ? 'card--photo' : 'card--fallback'}`}>
       <div className="card__hero">
         <div className="card__hero-art">
-          {photo && !photoFailed ? (
+          {shownPhoto ? (
             <img
-              key={photo}
+              key={shownPhoto}
               className="card__photo"
-              src={photo}
+              src={shownPhoto}
               alt={`Photo of ${profile.name}`}
               draggable={false}
               onError={() => setPhotoFailed(true)}
@@ -73,9 +75,11 @@ export function ProfileCard({ profile, photoUrl }: { profile: Profile; photoUrl?
         <div className="card__identity">
           <h2 className="card__name">
             {profile.name}
-            <span className="card__age">, {profile.age}</span>{' '}
-            <span className="card__gender">{profile.gender}</span>
+            <span className="card__age">, {profile.age}</span>
           </h2>
+          <p className="card__meta">
+            <span className="card__gender">{profile.gender}</span>
+          </p>
         </div>
       </div>
       {hasBio && (
